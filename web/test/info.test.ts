@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Api, Format, ImageItem, ImageSource, Meta, Session } from '../src/api';
 import type { Ctx } from '../src/ctx';
 import { setLang } from '../src/i18n';
+import { mountHelp } from '../src/help';
 import { formatBytes, formatTaken, infoRows, mountInfo } from '../src/info';
 import { EscStack, Store, initialState } from '../src/state';
 
@@ -67,7 +68,6 @@ describe('infoRows', () => {
 
 function setup() {
   const root = document.body.appendChild(document.createElement('div'));
-  root.hidden = true;
   const store = new Store({
     ...initialState, index: 0,
     listing: { dir: '/d', parent: null, images: [item('a.jpg'), item('b.jpg')], dirs: [] },
@@ -81,9 +81,10 @@ function setup() {
     store, api: { meta } as unknown as Api, src: {} as ImageSource, esc,
     session: { platform: 'windows' } as Session, dispatch: vi.fn(),
   };
-  const unmount = mountInfo(root, ctx);
+  const panel = mountInfo(root, ctx);
+  const help = mountHelp(root, ctx);
   const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
-  return { root, store, meta, pending, esc, unmount, flush };
+  return { root, store, meta, pending, esc, panel, help, flush };
 }
 
 beforeEach(() => setLang('en'));
@@ -98,8 +99,8 @@ describe('mountInfo', () => {
   });
 
   it('fetches when shown, renders the answer with textContent', async () => {
-    const { root, meta, pending, flush } = setup();
-    root.hidden = false;
+    const { root, panel, meta, pending, flush } = setup();
+    panel.open();
     await flush();
     expect(meta).toHaveBeenCalledWith('/d/a.jpg');
     expect(root.textContent).toContain('a.jpg');
@@ -118,8 +119,8 @@ describe('mountInfo', () => {
 
 describe('mountInfo: staleness and lifecycle', () => {
   it('ignores a stale /meta response after the image changed', async () => {
-    const { root, store, pending, flush } = setup();
-    root.hidden = false;
+    const { root, panel, store, pending, flush } = setup();
+    panel.open();
     await flush();
     store.set({ index: 1 });
     expect(pending.map((p) => p.path)).toEqual(['/d/a.jpg', '/d/b.jpg']);
@@ -133,23 +134,22 @@ describe('mountInfo: staleness and lifecycle', () => {
   });
 
   it('ignores a response that arrives after the panel was closed', async () => {
-    const { root, pending, flush } = setup();
-    root.hidden = false;
+    const { root, panel, pending, flush } = setup();
+    panel.open();
     await flush();
-    root.hidden = true;
+    panel.close();
     await flush();
     const before = root.innerHTML;
     pending[0]?.resolve(fullMeta());
     await flush();
     expect(root.innerHTML).toBe(before);
   });
-
 });
 
-describe('mountInfo: failure, reuse and Esc', () => {
+describe('mountInfo: failure and reuse', () => {
   it('keeps showing name and size when /meta fails', async () => {
-    const { root, pending, flush } = setup();
-    root.hidden = false;
+    const { root, panel, pending, flush } = setup();
+    panel.open();
     await flush();
     pending[0]?.reject(new Error('boom'));
     await flush();
@@ -157,39 +157,53 @@ describe('mountInfo: failure, reuse and Esc', () => {
   });
 
   it('reuses what it already loaded when reopened on the same image', async () => {
-    const { root, meta, pending, flush } = setup();
-    root.hidden = false;
+    const { root, panel, meta, pending, flush } = setup();
+    panel.open();
     await flush();
     pending[0]?.resolve(fullMeta());
     await flush();
-    root.hidden = true;
+    panel.close();
     await flush();
-    root.hidden = false;
+    panel.open();
     await flush();
     expect(meta).toHaveBeenCalledTimes(1);
     expect(root.textContent).toContain('4000 × 3000');
   });
 
+});
+
+describe('mountInfo: panels', () => {
   it('is an Esc layer "panel" only while open, and Esc closes it', async () => {
-    const { root, esc, flush } = setup();
+    const { panel, esc } = setup();
     expect(esc.handle()).toBeNull();
-    root.hidden = false;
-    await flush();
+    panel.open();
     expect(esc.handle()).toBe('panel');
-    expect(root.hidden).toBe(true);
+    expect(panel.isOpen()).toBe(false);
     expect(esc.handle()).toBeNull();
-    root.hidden = false;
-    await flush();
-    root.hidden = true;
-    await flush();
+    panel.open();
+    panel.close();
     expect(esc.handle()).toBeNull();
   });
 
-  it('unmount stops reacting', async () => {
-    const { root, meta, unmount, flush } = setup();
-    unmount();
-    root.hidden = false;
+  it('opening info closes help and vice versa', () => {
+    const { panel, help, esc } = setup();
+    help.open();
+    panel.open();
+    expect(help.isOpen()).toBe(false);
+    expect(panel.isOpen()).toBe(true);
+    help.open();
+    expect(panel.isOpen()).toBe(false);
+    expect(esc.handle()).toBe('panel');
+    expect(esc.handle()).toBeNull();
+  });
+
+  it('dispose stops reacting and removes its DOM', async () => {
+    const { root, store, panel, meta, flush } = setup();
+    panel.open();
+    panel.dispose();
+    store.set({ index: 1 });
     await flush();
-    expect(meta).not.toHaveBeenCalled();
+    expect(meta).toHaveBeenCalledTimes(1);
+    expect(root.querySelector('.ps-info')).toBeNull();
   });
 });

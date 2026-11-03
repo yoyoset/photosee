@@ -1,4 +1,4 @@
-/* Overlay, filmstrip and info panel. Package J.
+/* Overlay, filmstrip and info content. Package J.
  * The stage stays pure black: only the two bars carry a gradient, and only
  * behind their own controls. Nothing here covers the window with a
  * translucent layer. Timings come from constants.ts as --ov-fade; sizes as
@@ -63,17 +63,11 @@
 
 html.cursor-hidden, html.cursor-hidden * { cursor: none !important; }
 
-.info {
-  position: fixed; z-index: 20; width: min(320px, calc(100vw - 24px));
-  top: calc(env(safe-area-inset-top, 0px) + 48px); right: calc(env(safe-area-inset-right, 0px) + 12px);
-  max-height: calc(100vh - 160px); overflow: auto; padding: 12px 14px;
-  background: var(--panel); border-radius: var(--radius); color: var(--fg); font: 13px/1.4 var(--font);
-}
-.info[hidden] { display: none; }
-.info-name { font-weight: 600; overflow-wrap: anywhere; margin-bottom: 8px; }
-.info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
-.info dt { color: var(--fg-dim); }
-.info dd { margin: 0; overflow-wrap: anywhere; }
+/* Info content inside the shared Modal (panels.css supplies the surface). */
+.ps-info .info-name { font-weight: 600; overflow-wrap: anywhere; margin: 8px 0; }
+.ps-info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+.ps-info dt { color: var(--fg-dim); }
+.ps-info dd { margin: 0; overflow-wrap: anywhere; }
 
 @media (prefers-reduced-motion: reduce) {
   .ov-top, .ov-bottom { transition: none; }

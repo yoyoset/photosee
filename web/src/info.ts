@@ -1,12 +1,14 @@
 // Info panel (key I): file name, dimensions, size and the EXIF summary from
 // /meta. Package J.
 //
-// Visibility contract (state.ts has no `infoVisible`, see QUESTIONS.md): the
-// controller shows and hides the panel by toggling `root.hidden`; the panel
-// watches that attribute. It only talks to /meta while it is shown.
+// Visibility: the controller drives the returned handle (open/close/toggle).
+// The panel is a Modal from help.ts, so opening it closes settings/help and
+// the single `panel` Esc layer is registered only while it is open. It only
+// talks to /meta while it is shown.
 
 import type { ImageItem, Meta } from './api';
 import type { Ctx } from './ctx';
+import { Modal, type PanelHandle } from './help';
 import { t, type Key } from './i18n';
 
 export interface Row { label: Key; value: string }
@@ -45,7 +47,7 @@ export function infoRows(item: ImageItem | null, meta: Meta | null): Row[] {
   return candidates.flatMap(([label, value]) => (value ? [{ label, value }] : []));
 }
 
-function render(root: HTMLElement, item: ImageItem | null, meta: Meta | null): void {
+function render(body: HTMLElement, item: ImageItem | null, meta: Meta | null): void {
   const name = document.createElement('div');
   name.className = 'info-name';
   name.textContent = item?.name ?? '';
@@ -57,57 +59,40 @@ function render(root: HTMLElement, item: ImageItem | null, meta: Meta | null): v
     dd.textContent = r.value; // textContent: file names and EXIF strings are hostile input
     dl.append(dt, dd);
   }
-  root.replaceChildren(name, dl);
+  body.replaceChildren(name, dl);
 }
 
-export function mountInfo(root: HTMLElement, ctx: Ctx): () => void {
-  root.classList.add('info');
-  let unEsc: (() => void) | null = null;
+export function mountInfo(root: HTMLElement, ctx: Ctx): PanelHandle {
   let loaded: { path: string; meta: Meta } | null = null;
   // Bumped whenever the answer to an in-flight request stops mattering.
   let seq = 0;
+  const modal: Modal = new Modal(root, ctx, 'help.info', 'ps-info', {
+    onOpen: () => show(),
+    onClose: () => { seq++; },
+  });
 
-  const close = (): boolean => {
-    if (root.hidden) return false;
-    root.hidden = true;
-    sync();
-    return true;
-  };
-
-  function sync(): void {
-    if (root.hidden) {
-      unEsc?.();
-      unEsc = null;
-      seq++;
-      return;
-    }
-    unEsc ??= ctx.esc.register('panel', close);
+  function show(): void {
     const mine = ++seq;
     const item = ctx.store.current();
     const known = loaded && loaded.path === item?.path ? loaded.meta : null;
-    render(root, item, known);
+    render(modal.body, item, known);
     if (!item || known) return;
     ctx.api.meta(item.path).then((meta) => {
       // The user may have moved on or closed the panel while this was in flight.
       if (mine !== seq) return;
       loaded = { path: item.path, meta };
-      render(root, item, meta);
+      render(modal.body, item, meta);
     }, () => { /* no EXIF is not an error worth a card: the name and size stay */ });
   }
 
   const unsub = ctx.store.subscribe((s, prev) => {
-    if (s.index !== prev.index || s.listing !== prev.listing) sync();
+    if (modal.isOpen() && (s.index !== prev.index || s.listing !== prev.listing)) show();
   });
-  const obs = new MutationObserver(sync);
-  obs.observe(root, { attributes: true, attributeFilter: ['hidden'] });
-  sync();
-
-  return () => {
-    obs.disconnect();
-    unsub();
-    unEsc?.();
-    seq++;
-    root.classList.remove('info');
-    root.replaceChildren();
+  return {
+    open: (o) => modal.open(o),
+    close: () => modal.close(),
+    toggle: (o) => modal.toggle(o),
+    isOpen: () => modal.isOpen(),
+    dispose: () => { unsub(); modal.dispose(); },
   };
 }
