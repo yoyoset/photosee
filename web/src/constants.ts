@@ -49,6 +49,9 @@ export const PANORAMA_ASPECT = 3;
 
 export const SLIDESHOW_FADE_MS = 300;
 export const FOLDER_TOAST_MS = 1500;
+/** A full-sentence hint ("last image · Ctrl+→ next folder") needs longer
+ * than a folder name to be read. */
+export const HINT_TOAST_MS = 3000;
 export const SLIDESHOW_INTERVAL_MIN_S = 1;
 export const SLIDESHOW_INTERVAL_MAX_S = 60;
 
