@@ -45,7 +45,7 @@ merged, because both call into them. T (test top-up) runs last.
 | I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
 | J overlay/filmstrip/info | sonnet | running | wp/j |
 | K keys/gestures | sonnet | merged 7e671b5 + review fix; 59 tests; edge clicks changed to immediate (brief had them wait 300 ms); drag feedback via --drag-x/--drag-y/--pull | wp/k |
-| L settings/help/slideshow-ui/errors | sonnet | merged ba7cc36; 43 tests against the real step(); handles: panel {open,close,toggle}, slideshow {imageShown,imageFailed,folderLoaded,noNextFolder}, fade class ps-fade on #stage | wp/l |
+| L settings/help/slideshow-ui/errors | sonnet | merged 645da34; 43 tests against the real step(); handles: panel {open,close,toggle}, slideshow {imageShown,imageFailed,folderLoaded,noNextFolder}, fade class ps-fade on #stage | wp/l |
 
 Pi workers (progate/flashgate) are still unavailable (no OPENCODE key in
 the environment), so sonnet sub-agents stand in.
