@@ -1,0 +1,7 @@
+{
+  "api_version": 1,
+  "mode": "server",
+  "platform": "linux",
+  "start": null,
+  "roots": [{ "name": "photos", "path": "/photos" }]
+}

@@ -1,0 +1,18 @@
+{
+  "fmt": "jpeg",
+  "width": 4000,
+  "height": 6000,
+  "orientation": "rotate90",
+  "animated": false,
+  "size": 5242880,
+  "mtime_ms": 1714569730000,
+  "exif": {
+    "camera": "Canon EOS R6",
+    "lens": "RF24-105mm F4 L IS USM",
+    "iso": 400,
+    "exposure": "1/250",
+    "f_number": 4.0,
+    "focal_mm": 50.0,
+    "taken": "2024:05:01 13:22:10"
+  }
+}

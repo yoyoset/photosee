@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {
+      "p": "/photos",
+      "root": "/photos",
+      "d": "next",
+      "dir": "/photos/2023"
+    },
+    {
+      "p": "/photos/2023",
+      "root": "/photos",
+      "d": "next",
+      "dir": "/photos/2025"
+    },
+    {
+      "p": "/photos/2025",
+      "root": "/photos",
+      "d": "next",
+      "dir": null
+    },
+    {
+      "p": "/photos/2025",
+      "root": "/photos",
+      "d": "prev",
+      "dir": "/photos/2023"
+    },
+    {
+      "p": "/photos/2023",
+      "root": "/photos",
+      "d": "prev",
+      "dir": "/photos"
+    },
+    {
+      "p": "/photos",
+      "root": "/photos",
+      "d": "prev",
+      "dir": null
+    }
+  ]
+}

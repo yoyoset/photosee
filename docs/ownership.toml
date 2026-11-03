@@ -1,0 +1,78 @@
+# Which paths each work package may change. `scripts/gates.mjs --ownership
+# <WP> <base>` fails if a branch touches anything else. Globs: `*` matches
+# within one path segment, `**` matches any depth. Contract files (see
+# [contract]) belong to the orchestrator only.
+
+[contract]
+paths = [
+  "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "clippy.toml",
+  "web/package.json", "web/package-lock.json", "web/tsconfig.json",
+  "web/eslint.config.js", "web/vite.config.ts", "web/index.html",
+  "core/Cargo.toml", "server/Cargo.toml",
+  "core/src/lib.rs", "core/src/types.rs", "core/src/error.rs", "core/src/io.rs",
+  "core/src/testfs.rs", "core/src/config.rs", "core/src/decode/mod.rs", "core/src/decode/heic.rs",
+  "server/src/lib.rs", "server/src/state.rs",
+  "web/src/api.ts", "web/src/state.ts", "web/src/constants.ts", "web/src/ctx.ts",
+  "web/src/actions.ts", "web/src/style.css",
+  "contracts/**", "docs/**", "scripts/check.ps1", "scripts/gates.mjs", "AGENTS.md", "TASKS.md",
+]
+
+# ---- M0 ----
+[M0-T]
+paths = ["spikes/transport/**"]
+
+[M0-R]
+paths = ["core/src/decode/raw/**", "core/tests/raw_*.rs"]
+
+[M0-S]
+paths = ["tools/bench-smb/**", "scripts/bench-smb.ps1"]
+
+[M0-F]
+paths = ["tools/gen-fixtures/**", "fixtures/generated/.gitkeep"]
+
+# ---- M1 Wave 1 ----
+[A]
+paths = ["core/src/scan.rs", "core/src/sort.rs", "core/src/nav.rs", "core/tests/nav_*.rs"]
+
+[B]
+paths = ["web/src/slideshow.ts", "web/test/slideshow.test.ts"]
+
+[C]
+paths = [
+  "core/src/format.rs", "core/src/orient.rs", "core/src/color.rs", "core/src/resize.rs",
+  "core/src/encode.rs", "core/src/delivery.rs", "core/src/pipeline.rs",
+  "core/src/decode/std_formats.rs", "core/tests/pipeline_*.rs",
+]
+
+[D]
+paths = ["core/src/decode/jxl.rs", "core/src/decode/psd.rs", "core/src/decode/svg.rs", "core/tests/codecs_*.rs"]
+
+[E]
+paths = ["core/src/decode/heic_wic.rs", "core/tests/heic_*.rs"]
+
+[F]
+paths = ["core/src/thumb.rs", "core/src/thumbcache.rs", "core/src/meta.rs", "core/tests/thumb_*.rs"]
+
+[G]
+paths = [
+  "server/src/routes.rs", "server/src/routes/**", "server/src/queue.rs", "server/src/range.rs",
+  "server/src/cache.rs", "server/tests/api_*.rs",
+]
+
+[H]
+paths = ["server/src/paths.rs", "server/src/guard.rs", "server/tests/security_*.rs"]
+
+[I]
+paths = ["web/src/viewer.ts", "web/src/zoom.ts", "web/src/prefetch.ts", "web/test/viewer*.test.ts", "web/test/zoom.test.ts", "web/test/prefetch.test.ts"]
+
+[J]
+paths = ["web/src/overlay.ts", "web/src/filmstrip.ts", "web/src/overlay.css", "web/test/overlay.test.ts", "web/test/filmstrip.test.ts"]
+
+[K]
+paths = ["web/src/keys.ts", "web/src/gestures.ts", "web/test/keys.test.ts", "web/test/gestures.test.ts"]
+
+[L]
+paths = [
+  "web/src/settings.ts", "web/src/slideshow-ui.ts", "web/src/errors.ts", "web/src/i18n.ts",
+  "web/test/settings.test.ts", "web/test/errors.test.ts", "web/test/i18n.test.ts",
+]

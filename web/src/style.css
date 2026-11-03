@@ -1,0 +1,26 @@
+/* Base layout. Contract: orchestrator. Modules add their own CSS files. */
+:root {
+  --bg: #000;
+  --fg: #f2f2f2;
+  --fg-dim: #a8a8a8;
+  --panel: rgba(20, 20, 20, 0.82);
+  --accent: #6aa9ff;
+  --danger: #ff6a6a;
+  --radius: 10px;
+  --font: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--fg); font: 14px/1.4 var(--font);
+}
+#stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; user-select: none; }
+#stage img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

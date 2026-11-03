@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.heic binary
+*.cr2 binary
+*.cr3 binary
+*.nef binary
+*.arw binary
+*.dng binary
+*.raf binary
+*.orf binary
+*.rw2 binary
+*.psd binary
+*.jxl binary
+*.tif binary
+*.ico binary

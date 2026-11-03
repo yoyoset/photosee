@@ -1,0 +1,13 @@
+{
+  "dir": "/photos",
+  "parent": null,
+  "images": [
+    { "name": "a2.jpg", "path": "/photos/a2.jpg", "fmt": "jpeg", "size": 1, "mtime_ms": 0 },
+    { "name": "a10.jpg", "path": "/photos/a10.jpg", "fmt": "jpeg", "size": 1, "mtime_ms": 0 }
+  ],
+  "dirs": [
+    { "name": "2023", "path": "/photos/2023" },
+    { "name": "2024", "path": "/photos/2024" },
+    { "name": "2025", "path": "/photos/2025" }
+  ]
+}

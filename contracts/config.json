@@ -1,0 +1,8 @@
+{
+  "interval_s": 5,
+  "on_end": "next_folder",
+  "shuffle": false,
+  "transition": "none",
+  "start_fullscreen": true,
+  "wheel": "navigate"
+}
