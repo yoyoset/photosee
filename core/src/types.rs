@@ -161,8 +161,16 @@ pub enum Delivery {
     Transcode { target: Size },
 }
 
-/// Location of a RAW file's largest embedded preview. `orientation` comes from
-/// the RAW's own metadata; the embedded JPEG usually carries none.
+/// Location of a RAW file's largest embedded preview.
+///
+/// `orientation` is the rotation still to apply **on top of** the embedded
+/// JPEG's own EXIF orientation, so nothing is ever applied twice:
+/// - the JPEG has no Orientation tag (CR2, NEF, ARW...): the RAW's orientation;
+/// - the JPEG carries its own tag (RAF, some DNG): `Normal`, because the JPEG
+///   decoder or the webview already applies that tag.
+///
+/// The consequence for delivery: a preview with `orientation == Normal` is
+/// safe to pass through unchanged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreviewLoc {
     pub offset: u64,

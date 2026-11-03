@@ -42,7 +42,7 @@ most a few hundred KB of headers in total.
 Orientation:
 - TIFF-based formats: IFD0 tag 0x0112.
 - CR3: the CMT1 box's IFD0.
-- RAF: the embedded JPEG's EXIF.
+- RAF: the embedded JPEG carries its own EXIF orientation, so report `Normal` (see the `PreviewLoc` docs: orientation is what remains to apply on top of the JPEG's own tag).
 
 Every offset and length must be checked against `src.len()`, and IFD walks
 must be capped (≤64 IFDs, ≤1024 entries each) so loops terminate on corrupt
