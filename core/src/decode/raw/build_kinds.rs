@@ -11,6 +11,8 @@ pub struct Sample {
     pub len: u64,
     pub w: u32,
     pub h: u32,
+    /// Expected `PreviewLoc.orientation` (EXIF value): what is still to
+    /// apply on top of the JPEG's own tag.
     pub orientation: u16,
 }
 
@@ -159,7 +161,7 @@ pub fn raf() -> Sample {
         len: j.len() as u64,
         w: 32,
         h: 24,
-        orientation: 6,
+        orientation: 1, // the JPEG's own tag (6) carries it
     }
 }
 

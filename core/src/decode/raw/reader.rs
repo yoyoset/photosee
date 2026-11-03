@@ -14,6 +14,9 @@ use std::cell::{Cell, RefCell};
 const BLOCK: usize = 16 * 1024;
 /// Cached blocks; IFD0, a sub-structure and the JPEG head fit at once.
 const SLOTS: usize = 4;
+/// Larger direct requests are cached too, up to the JPEG head window, so
+/// the SOF scan after the orientation-tag probe costs no extra IO.
+const CACHE_MAX: usize = 64 * 1024;
 /// Largest single request. The biggest legitimate one is a JPEG APP1
 /// segment (< 64 KiB); IFDs are capped at 1024 entries (12 KiB).
 const MAX_REQUEST: usize = 128 * 1024;
@@ -80,7 +83,7 @@ impl<'a> Reader<'a> {
             usize::try_from(self.len - off).map_or(BLOCK.max(n), |rest| rest.min(BLOCK).max(n));
         let block = self.fetch(off, want)?;
         let out = block[..n].to_vec();
-        if want <= BLOCK {
+        if want <= CACHE_MAX {
             let mut blocks = self.blocks.borrow_mut();
             if blocks.len() == SLOTS {
                 blocks.remove(0);

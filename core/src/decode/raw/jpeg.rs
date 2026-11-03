@@ -1,21 +1,17 @@
-//! JPEG header scanning inside a byte range: SOI check, SOF size and the
-//! APP1 EXIF orientation. Never touches entropy-coded data.
+//! JPEG header scanning inside a byte range: SOI check, SOF size and
+//! whether the JPEG carries its own EXIF Orientation tag. Never touches
+//! entropy-coded data.
 
-use super::reader::{Reader, Span};
-use super::tiff::Tiff;
+use super::reader::{Endian, Reader, Span};
 use crate::error::{Error, Result};
-use crate::types::{Orientation, Size};
+use crate::types::Size;
 
 /// Segments before SOF in camera JPEGs are a handful (APP0/1/2, DQT, DHT);
 /// this cap only bounds hostile input.
 const MAX_SEGMENTS: usize = 256;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct Head {
-    pub size: Size,
-    /// The JPEG's own EXIF orientation; `Normal` when it has none.
-    pub orientation: Orientation,
-}
+/// APP0/APP1 sit at the very start; 64 KiB is the largest APP1 there is.
+const OWN_TAG_WINDOW: u64 = 64 * 1024;
 
 pub(super) fn check_soi(r: &Reader, span: Span) -> Result<()> {
     if span.len < 4 || r.bytes(span.off, 2)? != [0xFF, 0xD8] {
@@ -32,11 +28,10 @@ fn is_sof(m: u8) -> bool {
 /// Walks markers from SOI to the first SOF. The EXIF thumbnail's own SOF
 /// sits inside the APP1 payload, which we skip by length, so the first SOF
 /// seen at segment level is the main image's.
-pub(super) fn scan(r: &Reader, span: Span) -> Result<Head> {
+pub(super) fn scan(r: &Reader, span: Span) -> Result<Size> {
     check_soi(r, span)?;
     let end = span.off + span.len;
     let mut pos = span.off + 2;
-    let mut orientation = Orientation::Normal;
     for _ in 0..MAX_SEGMENTS {
         if pos + 4 > end {
             break;
@@ -55,13 +50,7 @@ pub(super) fn scan(r: &Reader, span: Span) -> Result<Head> {
                     return Err(Error::corrupt("raw: JPEG segment length < 2"));
                 }
                 if is_sof(marker) {
-                    return Ok(Head {
-                        size: sof_size(r, pos, end)?,
-                        orientation,
-                    });
-                }
-                if marker == 0xE1 && orientation == Orientation::Normal {
-                    orientation = exif_orientation(r, pos + 4, seg - 2, end);
+                    return sof_size(r, pos, end);
                 }
                 pos += 2 + seg;
             }
@@ -84,19 +73,50 @@ fn sof_size(r: &Reader, pos: u64, end: u64) -> Result<Size> {
     Ok(Size::new(u32::from(w), u32::from(h)))
 }
 
-/// Orientation from an APP1 payload at `at`. Any defect means `Normal`:
-/// a broken EXIF block must not hide an otherwise good preview.
-fn exif_orientation(r: &Reader, at: u64, len: u64, end: u64) -> Orientation {
-    if len < 14 || at + len > end {
-        return Orientation::Normal;
+/// The value of the JPEG's own IFD0 Orientation tag, if it has one. Reads
+/// at most the first 64 KiB of the range in one request.
+pub(super) fn own_orientation(r: &Reader, span: Span) -> Result<Option<u16>> {
+    let n = span.len.min(OWN_TAG_WINDOW);
+    // `n` <= 64 KiB, so it fits in usize everywhere.
+    let head = r.bytes(span.off, n as usize)?;
+    Ok(orientation_tag(&head))
+}
+
+/// Pure parse of a JPEG head: SOI, then APP segments up to the first
+/// non-APP marker; the first APP1 `Exif\0\0` decides. Any defect means
+/// "no tag": a broken EXIF block must not hide a good preview.
+pub(super) fn orientation_tag(head: &[u8]) -> Option<u16> {
+    if !head.starts_with(&[0xFF, 0xD8]) {
+        return None;
     }
-    match r.bytes(at, 6) {
-        Ok(sig) if sig == b"Exif\0\0" => {}
-        _ => return Orientation::Normal,
+    let mut pos = 2usize;
+    for _ in 0..MAX_SEGMENTS {
+        let m = head.get(pos..pos + 4)?;
+        if m[0] != 0xFF || !(0xE0..=0xEF).contains(&m[1]) {
+            return None; // EXIF lives in APPn segments before any table/frame
+        }
+        let seg = usize::from(u16::from_be_bytes([m[2], m[3]]));
+        let payload = head.get(pos + 4..)?;
+        let payload = &payload[..payload.len().min(seg.saturating_sub(2))];
+        if m[1] == 0xE1 && payload.starts_with(b"Exif\0\0") {
+            return tiff_orientation(&payload[6..]);
+        }
+        pos += 2 + seg.max(2);
     }
-    let read = || -> Result<Orientation> {
-        let (t, ifd0) = Tiff::open(r, at + 6)?;
-        Ok(t.orientation(&t.ifd(ifd0)?))
+    None
+}
+
+/// IFD0 tag 0x0112 of an in-memory TIFF blob.
+fn tiff_orientation(t: &[u8]) -> Option<u16> {
+    let e = match t.get(..2)? {
+        b"II" => Endian::Little,
+        b"MM" => Endian::Big,
+        _ => return None,
     };
-    read().unwrap_or(Orientation::Normal)
+    let ifd0 = usize::try_from(e.u32(t, 4)).ok()?;
+    let count = usize::from(e.u16(t.get(ifd0..ifd0 + 2)?, 0)).min(1024);
+    (0..count).find_map(|i| {
+        let en = t.get(ifd0 + 2 + i * 12..ifd0 + 14 + i * 12)?;
+        (e.u16(en, 0) == 0x0112 && e.u16(en, 2) == 3).then(|| e.u16(en, 8))
+    })
 }

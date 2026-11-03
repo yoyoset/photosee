@@ -26,15 +26,18 @@ mod tests_bmff_raf;
 #[cfg(test)]
 mod tests_hostile;
 #[cfg(test)]
+mod tests_orient;
+#[cfg(test)]
 mod tests_tiff;
 
 use crate::error::Result;
 use crate::io::ReadAt;
-use crate::types::{Format, ImageInfo, PreviewLoc, RawKind, Rgba8, Size};
+use crate::types::{Format, ImageInfo, Orientation, PreviewLoc, RawKind, Rgba8, Size};
 use reader::{Reader, Span};
 
-fn locate_in(r: &Reader, kind: RawKind) -> Result<(Span, PreviewLoc)> {
-    let (span, orientation) = match kind {
+/// The range, the `PreviewLoc`, and the JPEG's own Orientation tag value.
+fn locate_in(r: &Reader, kind: RawKind) -> Result<(Span, PreviewLoc, Option<u16>)> {
+    let (span, raw_orientation) = match kind {
         RawKind::Cr3 => bmff::locate(r)?,
         RawKind::Raf => raf::locate(r)?,
         RawKind::Orf => orf::locate(r)?,
@@ -42,32 +45,46 @@ fn locate_in(r: &Reader, kind: RawKind) -> Result<(Span, PreviewLoc)> {
             tiff_raw::locate(r, kind)?
         }
     };
+    // Contract (types.rs PreviewLoc): report only what is still to apply on
+    // top of the JPEG's own tag. If the JPEG carries one, whoever decodes it
+    // (webview or std_formats) applies it, so adding the RAW's would rotate
+    // twice. The RAW tag and the JPEG tag describe the same camera pose.
+    // Probed first: its one <=64 KiB read lands in the cache and serves the
+    // SOI check and SOF scan below.
+    let own = jpeg::own_orientation(r, span)?;
     // Cheap guard against a well-formed header pointing at non-JPEG bytes:
     // the server would otherwise stream garbage labelled image/jpeg.
     jpeg::check_soi(r, span)?;
     let loc = PreviewLoc {
         offset: span.off,
         len: span.len,
-        orientation,
+        orientation: if own.is_some() {
+            Orientation::Normal
+        } else {
+            raw_orientation
+        },
     };
-    Ok((span, loc))
+    Ok((span, loc, own))
 }
 
-/// Byte range of the largest embedded JPEG, plus the RAW's own orientation.
+/// Byte range of the largest embedded JPEG, plus the orientation still to
+/// apply on top of the JPEG's own EXIF tag (see `PreviewLoc`).
 pub fn locate_preview(src: &dyn ReadAt, kind: RawKind) -> Result<PreviewLoc> {
     let r = Reader::new(src)?;
     Ok(locate_in(&r, kind)?.1)
 }
 
-/// Info of the embedded preview (size read from the JPEG header).
+/// Info of the embedded preview: size from the JPEG's SOF; orientation is
+/// the effective one a viewer ends up with (the JPEG's own tag if it has
+/// one, else the RAW's), so `display_size` is right in both cases.
 pub fn info(src: &dyn ReadAt, kind: RawKind) -> Result<ImageInfo> {
     let r = Reader::new(src)?;
-    let (span, loc) = locate_in(&r, kind)?;
-    let head = jpeg::scan(&r, span)?;
+    let (span, loc, own) = locate_in(&r, kind)?;
+    let size = jpeg::scan(&r, span)?;
     Ok(ImageInfo {
         format: Format::Raw(kind),
-        size: head.size,
-        orientation: loc.orientation,
+        size,
+        orientation: own.map_or(loc.orientation, Orientation::from_exif),
         animated: false,
     })
 }

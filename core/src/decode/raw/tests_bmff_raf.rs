@@ -81,15 +81,8 @@ fn cr3_largesize_and_size_zero_boxes() {
 }
 
 #[test]
-fn raf_header_and_jpeg_exif_orientation() {
-    let s = raf();
-    check(RawKind::Raf, &s);
-    assert_eq!(
-        locate_preview(&s.data, RawKind::Raf)
-            .expect("raf")
-            .orientation,
-        Orientation::Rotate90
-    );
+fn raf_header_locates_the_jpeg() {
+    check(RawKind::Raf, &raf());
 }
 
 #[test]

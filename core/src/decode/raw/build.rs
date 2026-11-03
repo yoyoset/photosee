@@ -177,6 +177,10 @@ impl Counting {
         self.stats.lock().expect("stats").0
     }
 
+    pub fn calls(&self) -> usize {
+        self.stats.lock().expect("stats").1
+    }
+
     pub fn largest(&self) -> usize {
         self.stats.lock().expect("stats").2
     }

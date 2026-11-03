@@ -19,8 +19,13 @@ pub(super) fn check(kind: RawKind, s: &Sample) {
     let inf = info(&s.data, kind).expect("info");
     assert_eq!(inf.size, Size::new(s.w, s.h), "{kind:?} SOF size");
     assert_eq!(inf.format, Format::Raw(kind));
-    assert_eq!(inf.orientation, loc.orientation);
     let range = &s.data[loc.offset as usize..(loc.offset + loc.len) as usize];
+    // info reports the effective orientation: the JPEG's own tag wins.
+    let own = super::jpeg::orientation_tag(range);
+    assert_eq!(
+        inf.orientation,
+        own.map_or(loc.orientation, Orientation::from_exif)
+    );
     let img = image::load_from_memory_with_format(range, image::ImageFormat::Jpeg)
         .expect("extracted range decodes as JPEG");
     assert_eq!((img.width(), img.height()), (s.w, s.h));
@@ -75,7 +80,8 @@ fn tiff_little_and_big_endian() {
 }
 
 /// Real layout distances: IFD0 at the front, a large JPEG 4 MiB later.
-/// Only the block at the file start and the one at the JPEG head are read.
+/// Exactly two reads: a 16 KiB block at the file start and the 64 KiB JPEG
+/// head window (orientation-tag probe, reused for SOI and SOF).
 #[test]
 fn far_apart_structures_read_only_their_blocks() {
     let j = jpeg(1200, 800);
@@ -90,7 +96,8 @@ fn far_apart_structures_read_only_their_blocks() {
     let inf = info(&src, RawKind::Arw).expect("info");
     assert_eq!(inf.size, Size::new(1200, 800));
     println!("4 MiB ARW-like file: {} header bytes read", src.bytes());
-    assert!(src.bytes() <= 2 * 16 * 1024, "{} bytes", src.bytes());
+    assert_eq!(src.bytes(), (16 + 64) * 1024);
+    assert_eq!(src.calls(), 2);
 }
 
 #[test]
