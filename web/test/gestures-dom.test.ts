@@ -117,23 +117,26 @@ describe('mouse', () => {
     expect(seen).toEqual([{ type: 'zoom_toggle' }]);
   });
 
-  it('edge click turns the page after the double-click window, not before', () => {
+  it('edge click turns the page at once', () => {
     ptr('pointerdown', 900, 300, 0, { kind: 'mouse' }); ptr('pointerup', 900, 300, 30, { kind: 'mouse' });
-    vi.advanceTimersByTime(DOUBLE_TAP_MS - 1);
-    expect(seen).toEqual([]);
-    vi.advanceTimersByTime(1);
     expect(seen).toEqual([{ type: 'next' }]);
     ptr('pointerdown', 50, 300, 1000, { kind: 'mouse' }); ptr('pointerup', 50, 300, 1030, { kind: 'mouse' });
-    vi.advanceTimersByTime(DOUBLE_TAP_MS);
     expect(seen).toEqual([{ type: 'next' }, { type: 'prev' }]);
   });
 
-  it('a double-click in an edge zone does nothing at all', () => {
-    for (const t of [0, 100]) {
+  it('fast edge clicks each turn a page and never zoom', () => {
+    for (const t of [0, 100, 200]) {
       ptr('pointerdown', 900, 300, t, { kind: 'mouse' }); ptr('pointerup', 900, 300, t + 20, { kind: 'mouse' });
     }
     vi.advanceTimersByTime(2000);
-    expect(seen).toEqual([]);
+    expect(seen).toEqual([{ type: 'next' }, { type: 'next' }, { type: 'next' }]);
+  });
+
+  it('an edge click does not pair with a following middle click into a zoom', () => {
+    ptr('pointerdown', 900, 300, 0, { kind: 'mouse' }); ptr('pointerup', 900, 300, 20, { kind: 'mouse' });
+    ptr('pointerdown', 880, 300, 100, { kind: 'mouse' }); ptr('pointerup', 880, 300, 120, { kind: 'mouse' });
+    vi.advanceTimersByTime(2000);
+    expect(seen.filter((a) => a.type === 'zoom_toggle')).toEqual([]);
   });
 
   it('a single click in the middle does nothing', () => {
