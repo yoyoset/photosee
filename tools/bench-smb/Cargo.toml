@@ -1,0 +1,15 @@
+[package]
+name = "bench-smb"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "MIT"
+description = "Read-only SMB/NAS read benchmark for PhotoSee (std only)"
+
+# Standalone crate: the empty table keeps it out of the PhotoSee workspace.
+[workspace]
+
+[dependencies]
+
+[profile.release]
+opt-level = 2
