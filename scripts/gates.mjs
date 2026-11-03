@@ -31,7 +31,9 @@ function checkFileLengths() {
   for (const d of SOURCE_DIRS) {
     for (const f of walk(join(ROOT, d))) {
       if (!/\.(rs|ts|js|mjs|css)$/.test(f)) continue;
-      const n = readFileSync(f, 'utf8').split('\n').length;
+      // A final newline ends the last line rather than starting a new one;
+      // eslint's max-lines counts the same way.
+      const n = readFileSync(f, 'utf8').replace(/\n$/, '').split('\n').length;
       if (n > MAX_LINES) problems.push(`${rel(f)}: ${n} lines > ${MAX_LINES}`);
     }
   }

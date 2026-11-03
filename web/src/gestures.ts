@@ -97,9 +97,7 @@ export class TapTracker {
     this.last = { x, y, t };
     return 'single';
   }
-  reset(): void {
-    this.last = null;
-  }
+  reset(): void { this.last = null; }
 }
 
 /** Incremental pinch between two frames: scale ratio and the new midpoint.
@@ -261,9 +259,8 @@ class Gestures {
     const side = p.x < w * EDGE_CLICK_FRACTION ? -1 : p.x > w * (1 - EDGE_CLICK_FRACTION) ? 1 : 0;
     const edge = this.zoomed ? 0 : side;
     if (mouse && edge) {
-      // Immediate, and every click counts: clicking fast must page fast.
-      // Waiting DOUBLE_TAP_MS put 300 ms on every edge page turn; edge zones
-      // simply never zoom, so there is nothing to disambiguate.
+      // Immediate: waiting DOUBLE_TAP_MS put 300 ms on every edge page turn,
+      // and edge zones never zoom, so there is nothing to disambiguate.
       this.cancelPending();
       this.taps.reset();
       this.emit({ type: edge > 0 ? 'next' : 'prev' });

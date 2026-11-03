@@ -6,3 +6,4 @@ node_modules/
 !/fixtures/generated/.gitkeep
 /bench/local
 *.log
+/.claude/
