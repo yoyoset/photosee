@@ -34,7 +34,7 @@ merged, because both call into them. T (test top-up) runs last.
 
 | WP | owner | status | branch |
 |---|---|---|---|
-| A scan/sort/nav | sonnet | running | wp/a |
+| A scan/sort/nav | sonnet | merged 1af9ab7; 23 tests; next from a leaf = 3 read_dir, flat in sibling count | wp/a |
 | B slideshow.ts | sonnet | merged 50635fc; 49 tests. A folder_loaded that arrives while paused is dropped, so the controller must not switch folders while paused | wp/b |
 | C std decode + pipeline | Claude (opus) | running | wp/c |
 | D jxl/psd/svg | sonnet | running | wp/d |
@@ -44,8 +44,8 @@ merged, because both call into them. T (test top-up) runs last.
 | H paths/guard | orchestrator | merged 1d4e0c0; 12 tests incl. a real junction escape | wp/h |
 | I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
 | J overlay/filmstrip/info | sonnet | running | wp/j |
-| K keys/gestures | sonnet | running | wp/k |
-| L settings/help/slideshow-ui/errors | sonnet | running | wp/l |
+| K keys/gestures | sonnet | merged 7e671b5 + review fix; 59 tests; edge clicks changed to immediate (brief had them wait 300 ms); drag feedback via --drag-x/--drag-y/--pull | wp/k |
+| L settings/help/slideshow-ui/errors | sonnet | review: questions resolved (dce8995), worker rebasing | wp/l |
 
 Pi workers (progate/flashgate) are still unavailable (no OPENCODE key in
 the environment), so sonnet sub-agents stand in.
