@@ -41,7 +41,7 @@ merged, because both call into them. T (test top-up) runs last.
 | E HEIC via WIC | Claude (opus) | running | wp/e |
 | F thumb/cache/meta | - | todo (batch 2) | |
 | G routes/queue/range/cache | - | todo (batch 2) | |
-| H paths/guard | orchestrator | running | main |
+| H paths/guard | orchestrator | merged 1d4e0c0; 12 tests incl. a real junction escape | wp/h |
 | I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
 | J overlay/filmstrip/info | sonnet | running | wp/j |
 | K keys/gestures | sonnet | running | wp/k |
