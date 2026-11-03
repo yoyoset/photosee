@@ -43,7 +43,7 @@ merged, because both call into them. T (test top-up) runs last.
 | G routes/queue/range/cache | - | todo (batch 2) | |
 | H paths/guard | orchestrator | merged 1d4e0c0; 12 tests incl. a real junction escape | wp/h |
 | I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
-| J overlay/filmstrip/info | sonnet | running | wp/j |
+| J overlay/filmstrip/info | sonnet | merged 3cf30d2; 49 tests; overlay z-index 10; info is a PanelHandle on L's Modal | wp/j |
 | K keys/gestures | sonnet | merged 7e671b5 + review fix; 59 tests; edge clicks changed to immediate (brief had them wait 300 ms); drag feedback via --drag-x/--drag-y/--pull | wp/k |
 | L settings/help/slideshow-ui/errors | sonnet | merged 645da34; 43 tests against the real step(); handles: panel {open,close,toggle}, slideshow {imageShown,imageFailed,folderLoaded,noNextFolder}, fade class ps-fade on #stage | wp/l |
 
