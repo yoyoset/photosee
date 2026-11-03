@@ -1,0 +1,31 @@
+[package]
+name = "transport-spike"
+version = "0.0.0"
+edition = "2024"
+publish = false
+default-run = "transport-spike"
+
+# Standalone: the root workspace excludes `spikes/`, and this empty table stops
+# cargo from walking up and adopting this crate into it.
+[workspace]
+
+[dependencies]
+# `custom-protocol` is what the Tauri CLI enables for production builds; without
+# it the release binary would still be a "dev" build (no embedded assets path).
+tauri = { version = "=2.12.5", features = ["custom-protocol"] }
+axum = "=0.8.9"
+tokio = { version = "=1.54.1", features = ["rt-multi-thread", "macros", "fs", "net", "time", "sync", "io-util"] }
+tokio-util = { version = "=0.7.20", features = ["io"] }
+serde_json = "=1.0.154"
+# Spike-only: generating the test JPEGs.
+image = { version = "=0.25.10", default-features = false, features = ["jpeg"] }
+# GetProcessTimes: "process start" must be the kernel's creation time, not main().
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

@@ -1,0 +1,32 @@
+{
+  "lastboot": "2026-11-03T11:00:44.5000000+08:00",
+  "gpu": [
+    {
+      "Name": "GameViewer Virtual Display Adapter",
+      "DriverVersion": "15.6.5.199",
+      "CurrentHorizontalResolution": null,
+      "CurrentVerticalResolution": null,
+      "CurrentRefreshRate": null
+    },
+    {
+      "Name": "NVIDIA GeForce RTX 3060",
+      "DriverVersion": "32.0.16.1664",
+      "CurrentHorizontalResolution": 2560,
+      "CurrentVerticalResolution": 1440,
+      "CurrentRefreshRate": 59
+    }
+  ],
+  "os": {
+    "Caption": "Microsoft Windows 11 专业版",
+    "Version": "10.0.22631",
+    "BuildNumber": "22631",
+    "TotalVisibleMemorySize": 67008676
+  },
+  "ubr": 6199,
+  "webview2": "156.0.4314.58",
+  "cpu": {
+    "Name": "Intel(R) Xeon(R) CPU E5-2698 v3 @ 2.30GHz",
+    "NumberOfCores": 16,
+    "NumberOfLogicalProcessors": 32
+  }
+}

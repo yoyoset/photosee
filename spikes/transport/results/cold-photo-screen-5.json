@@ -1,0 +1,74 @@
+{
+  "created_epoch": 1793724018661.3567,
+  "launched_at": 1793724018658.9866,
+  "page": {
+    "dcl_epoch": 1793724019363,
+    "decoded_epoch": 1793724019589,
+    "first_render_epoch": 1793724019693.9,
+    "first_request_start_epoch": 1793724019366.2,
+    "first_response_end_epoch": 1793724019369.5,
+    "time_origin": 1793724019317.9
+  },
+  "rust_marks_epoch": {
+    "axum_listening": 1793724018697.8696,
+    "first_file_read": 1793724018702.1555,
+    "first_requested": 1793724019366.56,
+    "main": 1793724018693.594,
+    "page_load_finished": 1793724019376.535,
+    "page_load_started": 1793724019359.9937,
+    "result_received": 1793724020099.8074,
+    "tauri_setup": 1793724018718.264,
+    "webview_created": 1793724019346.4033
+  },
+  "written_epoch": 1793724020099.8652,
+  "idle_memory": {
+    "count": 7,
+    "ws_bytes": 366116864,
+    "private_ws_bytes": 88555520,
+    "procs": [
+      {
+        "pid": 33820,
+        "name": "transport-spike.exe",
+        "ws": 25038848,
+        "private_ws": 5062656
+      },
+      {
+        "pid": 16936,
+        "name": "msedgewebview2.exe",
+        "ws": 111968256,
+        "private_ws": 26726400
+      },
+      {
+        "pid": 39372,
+        "name": "msedgewebview2.exe",
+        "ws": 12283904,
+        "private_ws": 1499136
+      },
+      {
+        "pid": 33616,
+        "name": "msedgewebview2.exe",
+        "ws": 79515648,
+        "private_ws": 33357824
+      },
+      {
+        "pid": 40564,
+        "name": "msedgewebview2.exe",
+        "ws": 39247872,
+        "private_ws": 7749632
+      },
+      {
+        "pid": 38860,
+        "name": "msedgewebview2.exe",
+        "ws": 22237184,
+        "private_ws": 2797568
+      },
+      {
+        "pid": 10248,
+        "name": "msedgewebview2.exe",
+        "ws": 75825152,
+        "private_ws": 11362304
+      }
+    ],
+    "ms_after_decode": 10000.960693359375
+  }
+}

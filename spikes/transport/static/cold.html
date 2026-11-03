@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>transport-spike cold</title>
+<style>html,body{margin:0;height:100%;background:#000}img{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+<!-- The <img> is in the HTML so its request starts while the document parses. -->
+<img id="v" src="/first" elementtiming="first">
+<script>
+  const at = (rel) => performance.timeOrigin + rel;
+  const t = { time_origin: performance.timeOrigin };
+  new PerformanceObserver((list) => {
+    for (const e of list.getEntries()) t.first_render_epoch = at(e.renderTime || e.loadTime);
+  }).observe({ type: 'element', buffered: true });
+  document.addEventListener('DOMContentLoaded', () => { t.dcl_epoch = at(performance.now()); });
+  const post = () => fetch('/result', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(t),
+  });
+  document.getElementById('v').decode().then(() => {
+    t.decoded_epoch = at(performance.now());
+    const r = performance.getEntriesByName(new URL('/first', location).href)[0];
+    if (r) {
+      t.first_request_start_epoch = at(r.requestStart);
+      t.first_response_end_epoch = at(r.responseEnd);
+    }
+    // Give Element Timing a moment to report the paint before posting.
+    setTimeout(post, 500);
+  }, (e) => { t.error = String(e); post(); });
+</script>
