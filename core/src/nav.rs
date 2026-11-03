@@ -5,6 +5,7 @@
 //! - the root itself is the first folder when it has images;
 //! - skip folders that contain no images;
 //! - never leave `root`; return `None` past either end.
+//!
 //! Golden cases: contracts/nav.json.
 
 use crate::error::Result;
