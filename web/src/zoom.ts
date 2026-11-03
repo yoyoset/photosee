@@ -114,12 +114,13 @@ export function zoomStep(z: Zoom, g: Geometry, dir: 1 | -1, anchor?: Point): Zoo
   return zoomAt(z, g, dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP, anchor);
 }
 
-/** 100%, with the image point under `anchor` moved to the view center (the
- * brief's "centered on the anchor"). No anchor keeps the current center. */
+/** 100% around `anchor`: the image point under the cursor stays under it,
+ * the same rule as every zoom step (docs/ux-spec.md, mouse section). No
+ * anchor zooms around the view center. */
 export function zoomActual(z: Zoom, g: Geometry, anchor?: Point): Zoom {
   const s0 = effectiveScale(z, g);
   const a = centered(g, anchor);
-  return clampPan({ mode: 'actual', scale: 1, x: -(a.x - z.x) / s0, y: -(a.y - z.y) / s0 }, g);
+  return clampPan({ mode: 'actual', scale: 1, x: a.x - (a.x - z.x) / s0, y: a.y - (a.y - z.y) / s0 }, g);
 }
 
 /** Double-click / `zoom_toggle`: fit -> 100% at the anchor; anything else -> fit. */
@@ -147,11 +148,24 @@ export function isWholeImage(loaded: Box, box: Box | null, meta: Box | null): bo
   return loaded.w < box.w - 1 && loaded.h < box.h - 1;
 }
 
+export const sameBox = (a: Box | null, b: Box | null): boolean =>
+  a === b || (!!a && !!b && a.w === b.w && a.h === b.h);
+
 /** Whether the needed request box grew past the one already asked for. 2%
  * slack: below that the blur is invisible, and boxes guessed from a
  * transcode's natural size jitter by a pixel, which must not loop. */
 export function grew(need: Box, have: Box): boolean {
   return need.w > have.w * 1.02 || need.h > have.h * 1.02;
+}
+
+/** What a loaded but partial image needs now (`img` and `loaded` unrotated).
+ * Fit mode: a bigger box once the stage or DPR grew, never for a shrink.
+ * Zoomed: the original, once the screen shows more device px than loaded. */
+export function resolutionNeed(
+  fit: boolean, scale: number, img: Box, loaded: Box, need: Box, asked: Box,
+): Box | 'original' | null {
+  if (!fit) return beyondLoaded(scale, img, loaded) ? 'original' : null;
+  return grew(need, asked) ? need : null;
 }
 
 /** CSS transform for an element whose CSS size is the unrotated image size

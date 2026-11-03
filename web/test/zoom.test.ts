@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ZOOM_MAX, ZOOM_STEP } from '../src/constants';
 import {
   FIT, beyondLoaded, clampPan, cssTransform, effectiveScale, fitScale, grew, isPanorama, isWholeImage,
-  panBy, requestBox, rotated, toggleZoom, zoomActual, zoomAt, zoomStep,
+  panBy, requestBox, resolutionNeed, rotated, sameBox, toggleZoom, zoomActual, zoomAt, zoomStep,
   type Box, type Geometry, type Point, type Zoom,
 } from '../src/zoom';
 
@@ -137,15 +137,28 @@ describe('clampPan / panBy', () => {
 
 describe('toggleZoom / zoomActual', () => {
   const g = geo({ w: 4000, h: 3000 });
-  it('fit -> 100% moves the point under the anchor to the view center', () => {
-    const a = { x: 600, y: 500 };
-    const p = imagePointAt(FIT, g, a);
-    const z = toggleZoom(FIT, g, a);
-    expect(z.mode).toBe('actual');
-    expect(z.scale).toBe(1);
-    const at = screenOf(z, g, p);
-    expect(at.x).toBeCloseTo(500, 6);
-    expect(at.y).toBeCloseTo(400, 6);
+  it('fit -> 100% keeps the image point under the anchor where it is', () => {
+    for (const a of [{ x: 600, y: 500 }, { x: 100, y: 700 }, { x: 990, y: 50 }]) {
+      const p = imagePointAt(FIT, g, a);
+      const z = toggleZoom(FIT, g, a);
+      expect([z.mode, z.scale]).toEqual(['actual', 1]);
+      const at = screenOf(z, g, p);
+      expect(at.x).toBeCloseTo(a.x, 6);
+      expect(at.y).toBeCloseTo(a.y, 6);
+    }
+  });
+  it('fit -> 100% at an anchor matches zoomAt by the same factor', () => {
+    const a = { x: 250, y: 650 };
+    const viaStep = zoomAt(FIT, g, 1 / 0.25, a);
+    const viaToggle = toggleZoom(FIT, g, a);
+    expect(viaToggle.x).toBeCloseTo(viaStep.x, 9);
+    expect(viaToggle.y).toBeCloseTo(viaStep.y, 9);
+  });
+  it('100% clamps the pan when the anchored point would pull an edge in', () => {
+    // Unclamped this would be (-125, -100); at 100% the edges allow only +-100.
+    const small = geo({ w: 1200, h: 1000 });
+    const z = zoomActual(FIT, small, { x: 1000, y: 800 });
+    expect(z).toEqual({ mode: 'actual', scale: 1, x: -100, y: -100 });
   });
   it('anything else -> fit, centered', () => {
     expect(toggleZoom({ mode: 'actual', scale: 1, x: 100, y: 100 }, g)).toEqual({ mode: 'fit', scale: 0.25, x: 0, y: 0 });
@@ -169,6 +182,18 @@ describe('resolution checks', () => {
     expect(isWholeImage({ w: 200, h: 150 }, { w: 1000, h: 800 }, null)).toBe(true);
     expect(isWholeImage({ w: 1000, h: 750 }, { w: 1000, h: 800 }, null)).toBe(false);
     expect(isWholeImage({ w: 1000, h: 750 }, { w: 1000, h: 800 }, { w: 4000, h: 3000 })).toBe(false);
+  });
+  it('resolutionNeed: bigger box in fit mode, the original when zoomed past the pixels', () => {
+    const img = { w: 4000, h: 3000 };
+    const loaded = { w: 1000, h: 750 };
+    const asked = { w: 1000, h: 800 };
+    expect(resolutionNeed(true, 0.5, img, loaded, { w: 2000, h: 1600 }, asked)).toEqual({ w: 2000, h: 1600 });
+    expect(resolutionNeed(true, 0.125, img, loaded, { w: 500, h: 400 }, asked)).toBeNull();
+    expect(resolutionNeed(false, 0.5, img, loaded, asked, asked)).toBe('original');
+    expect(resolutionNeed(false, 0.25, img, loaded, { w: 2000, h: 1600 }, asked)).toBeNull();
+  });
+  it('sameBox treats null as "the original"', () => {
+    expect([sameBox(null, null), sameBox(null, { w: 1, h: 1 }), sameBox({ w: 1, h: 2 }, { w: 1, h: 2 })]).toEqual([true, false, true]);
   });
   it('grew ignores growth under 2%', () => {
     expect(grew({ w: 2000, h: 1600 }, { w: 1000, h: 800 })).toBe(true);
