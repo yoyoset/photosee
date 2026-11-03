@@ -37,7 +37,10 @@ lives with the orchestrator. Everything a worker needs is in this repo:
 7. **Done means green**: `powershell -File scripts/check.ps1 -Rust` (or
    `-Web`) passes, and so does
    `node scripts/gates.mjs --ownership <WP> main`.
-8. **Report honestly**: what works, what you measured (numbers), what you
+8. **Stop only what you started, by PID.** Several workers share this
+   machine. `taskkill /IM node.exe` or `Stop-Process -Name cargo` kills
+   everyone's builds and test runs (it happened once).
+9. **Report honestly**: what works, what you measured (numbers), what you
    could not verify, and what you left out.
 
 ## Build notes (Windows)
