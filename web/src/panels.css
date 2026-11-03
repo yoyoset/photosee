@@ -1,0 +1,95 @@
+/* Package L: modal panels, toast, notice, banner, error card, slideshow fade.
+ * Solid dark surfaces only: translucency over the image is a non-goal
+ * (docs/non-goals.md). Layers: error card 1 < overlay (package J, >= 10)
+ * < banner 40 = toast 40 < panels 50. */
+
+/* ---- modal panels (settings, help) ---- */
+.ps-backdrop {
+  position: fixed; inset: 0; z-index: 50; padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ps-backdrop[hidden] { display: none; }
+.ps-panel {
+  width: min(460px, 100%); max-height: 100%; overflow: auto;
+  background: #1c1c1e; color: var(--fg); border: 1px solid #3a3a3c;
+  border-radius: var(--radius); box-shadow: 0 8px 32px #000; padding: 12px 20px 20px;
+}
+.ps-panel-head { display: flex; align-items: center; justify-content: space-between; }
+.ps-panel-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.ps-close {
+  background: none; border: 0; color: var(--fg-dim); font: inherit; font-size: 20px;
+  line-height: 1; padding: 6px 10px; cursor: pointer; border-radius: 6px;
+}
+.ps-close:hover { color: var(--fg); background: #2c2c2e; }
+.ps-btn {
+  display: inline-block; background: #2c2c2e; color: var(--fg); border: 1px solid #48484a;
+  border-radius: 6px; padding: 6px 14px; font: inherit; text-decoration: none; cursor: pointer;
+}
+.ps-btn:hover { background: #3a3a3c; }
+.ps-panel :focus-visible, .ps-banner :focus-visible, .ps-errcard :focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* ---- settings form ---- */
+.ps-settings-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.ps-settings-form fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ps-settings-form legend, .ps-row-label { padding: 0; margin-bottom: 4px; color: var(--fg-dim); font-size: 13px; }
+.ps-settings-form label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ps-interval { display: flex; align-items: center; gap: 10px; }
+.ps-interval input[type="range"] { flex: 1; min-width: 0; }
+.ps-interval input[type="number"] {
+  width: 64px; background: #2c2c2e; color: var(--fg); border: 1px solid #48484a;
+  border-radius: 6px; padding: 4px 6px; font: inherit;
+}
+.ps-interval input[aria-invalid="true"] { border-color: var(--danger); }
+.ps-error { margin: 0; color: var(--danger); font-size: 13px; }
+.ps-error:empty { display: none; }
+
+/* ---- help table ---- */
+.ps-help-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.ps-help-table th, .ps-help-table td { text-align: left; padding: 5px 4px; vertical-align: top; font-weight: 400; }
+.ps-help-table th { color: var(--fg-dim); width: 40%; }
+.ps-help-table tr + tr { border-top: 1px solid #2c2c2e; }
+.ps-help-table kbd {
+  display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; background: #2c2c2e;
+  border: 1px solid #48484a; border-radius: 4px; font: 12px/1.6 var(--font);
+}
+
+/* ---- toast / empty-folder notice ---- */
+.ps-toast, .ps-notice {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 40;
+  max-width: min(90vw, 560px); padding: 8px 16px; border-radius: var(--radius);
+  background: #1c1c1e; color: var(--fg); border: 1px solid #3a3a3c; pointer-events: none;
+  text-align: center;
+}
+.ps-toast { top: 14%; }
+.ps-notice { top: 50%; transform: translate(-50%, -50%); }
+
+/* ---- NAS banner ---- */
+.ps-banners { position: fixed; left: 0; right: 0; top: 0; z-index: 40; }
+.ps-banner {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+  background: #3a1d1d; color: var(--fg); border-bottom: 1px solid var(--danger);
+}
+.ps-banner-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* ---- error card (replaces the image, centered on black) ---- */
+.ps-errcard {
+  position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, 90%); max-height: calc(100% - 280px); overflow: auto;
+  padding: 20px 24px; text-align: center; background: #141414;
+  border: 1px solid #3a3a3c; border-radius: var(--radius); user-select: text;
+}
+.ps-errcard-name { margin: 0 0 8px; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.ps-errcard-msg { margin: 0 0 14px; font-size: 16px; }
+.ps-errcard-detail { margin-top: 14px; text-align: left; color: var(--fg-dim); font-size: 12px; }
+.ps-errcard-detail pre { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---- slideshow cross-fade (contract with the viewer package) ----
+ * While #stage has class `ps-fade`, an <img> inserted into it fades in over
+ * --ps-fade-ms (set on #stage). The viewer must keep the previous <img>
+ * underneath for SLIDESHOW_FADE_MS and then remove it. @starting-style only
+ * fires for newly rendered elements, so adding the class does not make the
+ * image already on screen flicker. Reduced motion: the class is never set. */
+#stage.ps-fade img { transition: opacity var(--ps-fade-ms, 300ms) ease-out; }
+@starting-style { #stage.ps-fade img { opacity: 0; } }
