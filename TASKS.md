@@ -35,7 +35,7 @@ merged, because both call into them. T (test top-up) runs last.
 | WP | owner | status | branch |
 |---|---|---|---|
 | A scan/sort/nav | sonnet | running | wp/a |
-| B slideshow.ts | sonnet | running | wp/b |
+| B slideshow.ts | sonnet | merged 50635fc; 49 tests. A folder_loaded that arrives while paused is dropped, so the controller must not switch folders while paused | wp/b |
 | C std decode + pipeline | Claude (opus) | running | wp/c |
 | D jxl/psd/svg | sonnet | running | wp/d |
 | E HEIC via WIC | Claude (opus) | running | wp/e |
