@@ -11,7 +11,7 @@ paths = [
   "core/Cargo.toml", "server/Cargo.toml",
   "core/src/lib.rs", "core/src/types.rs", "core/src/error.rs", "core/src/io.rs",
   "core/src/testfs.rs", "core/src/config.rs", "core/src/decode/mod.rs", "core/src/decode/heic.rs",
-  "server/src/lib.rs", "server/src/state.rs",
+  "server/src/lib.rs", "server/src/state.rs", "server/src/error.rs",
   "web/src/api.ts", "web/src/state.ts", "web/src/constants.ts", "web/src/ctx.ts",
   "web/src/actions.ts", "web/src/style.css", "web/src/i18n.ts", "web/test/i18n.test.ts",
   "contracts/**", "docs/**", "scripts/check.ps1", "scripts/gates.mjs", "AGENTS.md", "TASKS.md",

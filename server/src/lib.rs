@@ -2,6 +2,7 @@
 //! loopback only) and the Docker build. Contract: docs/api.md.
 
 pub mod cache;
+pub mod error;
 pub mod guard;
 pub mod paths;
 pub mod queue;

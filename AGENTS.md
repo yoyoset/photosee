@@ -47,4 +47,10 @@ lives with the orchestrator. Everything a worker needs is in this repo:
   Dependencies build at opt-level 2 even in dev, so the first build is slow
   and later ones are fast.
 - Web: `cd web && npm ci` once, then `npx vitest run`, `npx eslint .`, `npx tsc --noEmit`.
+- clippy's `allow-unwrap-in-tests` only covers `#[test]` functions. Helper
+  functions in `*/tests/*.rs` files need a file-level
+  `#![allow(clippy::unwrap_used, reason = "...")]`; that is the one allowed
+  `allow`.
+- Server errors: return `photosee_server::error::ApiError` (or call
+  `error_response`) so every non-2xx body matches docs/api.md §Errors.
 - Paths: core is OS-agnostic; never hard-code `\` or `/` outside tests.

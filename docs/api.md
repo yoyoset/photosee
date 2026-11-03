@@ -14,8 +14,10 @@ is a contract change: the orchestrator does it in its own commit, bumps
   - Desktop (`mode: "desktop"`): the native absolute path, e.g. `C:\Photos\a.jpg`, `\\nas\share\b.jpg`.
   - Docker (`mode: "server"`): `/<root>/<relative>`, e.g. `/photos/2024/a.jpg`.
 - Query values are percent-encoded.
-- Auth: desktop sets an HttpOnly `ps_token` cookie when serving `/`; every
-  `/api` request must carry it. Docker with `PHOTOSEE_PASSWORD` uses the same
+- Auth: the desktop shell opens `/?t=<token>` once. The server answers
+  `303` to `/` and sets the token as an HttpOnly, SameSite=Strict `ps_token`
+  cookie, so it never stays in the URL or reaches page script. After that,
+  every request (UI files included) must carry the cookie. Docker with `PHOTOSEE_PASSWORD` uses the same
   cookie, set by `POST /api/v1/login` (M2). Requests with a `Host` header not
   on the allow-list get 403 (DNS-rebinding defence).
 
