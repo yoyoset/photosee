@@ -1,0 +1,16 @@
+[package]
+name = "gen-fixtures"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Standalone tool: the empty [workspace] table keeps it out of the root workspace.
+[workspace]
+
+[dependencies]
+image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png", "gif", "webp", "tiff"] }
+moxcms = "=0.9.1"
+
+# Same trick as the root workspace: dependencies (image/JPEG) are the slow part.
+[profile.dev.package."*"]
+opt-level = 2
