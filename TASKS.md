@@ -19,9 +19,36 @@ Status: `todo` · `running` · `review` · `merged` · `blocked`
 Blocked on the user: NAS share path (to run M0-S), private RAW/HEIC samples
 (for M0-R's real-file test).
 
+## G0 decision (2026-11-04)
+**Resident mode.** The user was offered resident mode vs a native Windows
+shell and replied "continue" without choosing, so the recommended option
+stands. Closing the window hides it; a second launch hands its argument
+to the running instance. That leaves ~1 s for the first open of the day
+and near instant afterwards, at ~90 MB private memory while resident. It
+only shapes `app/` (Wave 2); Wave 1 is unaffected. Revisit if the first
+open after a reboot turns out much worse than 1 s.
+
 ## M1 Wave 1
-Briefs are written after G0, because numbers from M0 may change the
-budgets and the transport choice.
+Batch 1 runs now. Batch 2 (F thumbnails, G routes) starts once A and C are
+merged, because both call into them. T (test top-up) runs last.
+
+| WP | owner | status | branch |
+|---|---|---|---|
+| A scan/sort/nav | sonnet | running | wp/a |
+| B slideshow.ts | sonnet | running | wp/b |
+| C std decode + pipeline | Claude (opus) | running | wp/c |
+| D jxl/psd/svg | sonnet | running | wp/d |
+| E HEIC via WIC | Claude (opus) | running | wp/e |
+| F thumb/cache/meta | - | todo (batch 2) | |
+| G routes/queue/range/cache | - | todo (batch 2) | |
+| H paths/guard | orchestrator | running | main |
+| I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
+| J overlay/filmstrip/info | sonnet | running | wp/j |
+| K keys/gestures | sonnet | running | wp/k |
+| L settings/help/slideshow-ui/errors | sonnet | running | wp/l |
+
+Pi workers (progate/flashgate) are still unavailable (no OPENCODE key in
+the environment), so sonnet sub-agents stand in.
 
 ## Decisions changed during C0 (vs. the approved plan)
 - **Slideshow state machine moved from `core/` to `web/src/slideshow.ts`.**
@@ -31,5 +58,9 @@ budgets and the transport choice.
 - **`/list` returns one JSON document, not NDJSON.** Natural sort needs every
   entry before the first line can be emitted, so streaming would buy nothing.
   The first image never waits for the listing anyway.
+- **`i18n.ts` became a contract file** (it was package L's). Every UI package
+  needs the same keys, and one table avoids four packages inventing
+  strings. Package L got `help.ts` and package J got `info.ts`; the plan had
+  left the help and info panels unassigned.
 - **AVIF is passthrough-only.** `image`'s `avif-native` needs a dav1d C build.
   It is recorded in docs/non-goals.md.

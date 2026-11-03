@@ -45,8 +45,8 @@ WebView2 booting, which we cannot speed up. A native Direct2D viewer would
 typically show the first frame in about 150–250 ms. That is an inference,
 not measured here.
 
-This is the G0 decision; the user decides: **resident mode** vs **Windows
-native**. See TASKS.md.
+G0 decision, 2026-11-04: **resident mode**. This was the recommended option;
+the user said to continue without choosing. See TASKS.md.
 
 ## Not yet measured
 - First launch after a reboot, which needs a reboot: `node run.mjs cold 1 photo-screen`.

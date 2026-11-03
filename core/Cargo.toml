@@ -28,6 +28,8 @@ windows.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+# Lets core's own integration tests (core/tests/*.rs) use MemFs.
+photosee-core = { path = ".", features = ["testing"] }
 rawler.workspace = true
 
 [lints]
