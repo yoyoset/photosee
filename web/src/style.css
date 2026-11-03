@@ -16,7 +16,7 @@ html, body {
   background: var(--bg); color: var(--fg); font: 14px/1.4 var(--font);
 }
 #stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; user-select: none; }
-#stage img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; }
+#stage > img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;

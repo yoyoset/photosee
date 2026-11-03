@@ -73,7 +73,10 @@ Notes:
 - Clicking the outer `EDGE_CLICK_FRACTION` (15%) of either side turns the
   page, but only in fit mode. Edge zones ignore double-click.
 - Leaving 100% or custom zoom happens only by explicit action. Turning the
-  page always resets to fit.
+  page always resets to fit and resets display rotation (R) to 0: rotation
+  is a look at this one image, not a mode.
+- Double-click to 100% keeps the image point under the cursor where it is
+  (like every zoom step), rather than moving it to the center.
 
 ## Touch
 - Horizontal swipe turns the page when it covers `SWIPE_PAGE_FRACTION` (30%)
