@@ -12,9 +12,9 @@ Status: `todo` · `running` · `review` · `merged` · `blocked`
 | WP | owner | status | branch |
 |---|---|---|---|
 | M0-T transport + cold start | Claude sub-agent | todo | wp/m0-t |
-| M0-R RAW preview extractor | Claude sub-agent | todo | wp/m0-r |
-| M0-S SMB bench tool | progate | todo | wp/m0-s |
-| M0-F fixture generator | flashgate | todo | wp/m0-f |
+| M0-R RAW preview extractor | Claude sub-agent | merged df56390; 38 tests, synthetic only (no real samples yet) | wp/m0-r |
+| M0-S SMB bench tool | sonnet (stand-in for progate) | merged cfc8e06, awaiting NAS run | wp/m0-s |
+| M0-F fixture generator | sonnet (stand-in for flashgate) | merged; orientations re-verified with GDI+ | wp/m0-f |
 
 Blocked on the user: NAS share path (to run M0-S), private RAW/HEIC samples
 (for M0-R's real-file test).
