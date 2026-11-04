@@ -50,7 +50,7 @@ merged, because both call into them. T (test top-up) runs last.
 ## M1 Wave 2
 | WP | owner | status | branch |
 |---|---|---|---|
-| C2 transcode speed (WIC JPEG decode with DCT scaling + WIC encode) | sonnet | running | wp/c2 |
+| C2 transcode speed (WIC JPEG decode with DCT scaling + WIC encode) | sonnet | merged 17b47f1; 24 MP 583 -> 246-328 ms (decode 187 at 1/2 scale, resize 31, encode 30); 12 MP 146 ms. 24 MP still over 150 ms: entropy decode ~110 ms even at 1/8 | wp/c2 |
 | W2-UI controller + boot | sonnet | merged 20bc8ea; 31 tests (web total 300); bundle 21986 B gzip; found the slideshow start-position bug (fixed) | wp/w2-ui |
 | W2-APP Tauri shell (resident mode, token, single instance) | sonnet | merged 9455fa9; exe 16.55 MiB; cold start to thumbnail 1.03-1.23 s, full 24 MP 1.8-2.0 s; resident second open: thumbnail 151-203 ms, full 0.95-1.07 s; idle 97-117 MiB private. requestFullscreen needs a user gesture, so host routes behind the guard | wp/w2-app |
 
@@ -58,7 +58,7 @@ merged, because both call into them. T (test top-up) runs last.
 The biggest gap users will notice is C2: a full 24 MP image takes ~0.9 s after
 its thumbnail, all of it server decode + resize + encode.
 
-### C2: transcode speed (open, measured 2026-11-04)
+### C2: transcode speed (partly done; still open for 24 MP)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
 6000x4000 q92: decode 411 ms, resize 86 ms (CatmullRom), encode 170 ms, total 681 ms.
 On loopback, passing the file through costs 102 ms to paint (M0), so for big JPEGs
