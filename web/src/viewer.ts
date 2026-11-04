@@ -8,9 +8,10 @@
 // Replacing the element with the decoded Image object was not measured, and
 // would break "one <img>" that package L's fade class and K's gestures rely on.
 //
-// Nothing here animates, so prefers-reduced-motion needs no branch: changes
-// are instant, and the optional slideshow fade is package L's class on the
-// stage around `Viewer.element`.
+// Motion: image changes and zoom are instant. The one animation is the
+// snap-back after a touch drag that did not turn the page (K's --drag-x /
+// --drag-y / --pull / data-dragging on the stage); it is skipped under
+// prefers-reduced-motion. The slideshow fade is package L's class on the stage.
 
 import type { ApiError, ImageItem } from './api';
 import {
@@ -19,13 +20,14 @@ import {
 import type { Ctx } from './ctx';
 import { renderErrorCard } from './errors';
 import {
-  ImageCache, ImageLru, LoadingBar, decodeImage, defaultEnv, fetchImageError, prefetchWindow,
+  ImageCache, ImageLru, LoadingBar, SnapBack, decodeImage, defaultEnv, fetchImageError, prefetchWindow,
   type ImageLoader, type ViewerEnv,
 } from './prefetch';
 import type { ViewState } from './state';
 export type { ViewerEnv } from './prefetch';
 import {
-  beyondLoaded, cssTransform, effectiveScale, grew, isWholeImage, requestBox, rotated, type Box, type Geometry,
+  cssTransform, effectiveScale, isWholeImage, requestBox, resolutionNeed, rotated, sameBox,
+  type Box, type Geometry,
 } from './zoom';
 
 export interface ViewerOptions {
@@ -56,8 +58,8 @@ interface Full { url: string; natural: Box; box: Box | null }
 interface Cur {
   index: number;
   item: ImageItem;
-  meta: Box | null;
-  thumb: Box | null;
+  meta: Box | null; // display size from /meta
+  thumb: Box | null; // natural size of the thumbnail on screen
   full: Full | null;
   /** Box of the newest full request; null = the original. */
   want: Box | null;
@@ -65,49 +67,53 @@ interface Cur {
   failed: boolean;
 }
 
-const sameBox = (a: Box | null, b: Box | null): boolean => a === b || (!!a && !!b && a.w === b.w && a.h === b.h);
 const natural = (img: HTMLImageElement): Box => ({ w: img.naturalWidth, h: img.naturalHeight });
-
-function makeEl<K extends keyof HTMLElementTagNameMap>(tag: K, css: string): HTMLElementTagNameMap[K] {
-  const el = document.createElement(tag);
-  el.style.cssText = css;
-  return el;
-}
+// K's live drag offset goes first, i.e. it applies in screen space on top of
+// the fitted transform; it is 0 whenever K is not dragging.
+const DRAG = 'translate(var(--drag-x, 0px), var(--drag-y, 0px)) ';
 
 class StageView implements Viewer {
-  readonly element = makeEl('img', 'visibility:hidden');
-  private readonly bar = new LoadingBar(
-    makeEl('div', 'position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent);pointer-events:none'),
-    () => this.env.now(),
-  );
-  private readonly errHost = makeEl('div', 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:90%');
+  readonly element = document.createElement('img');
+  private readonly bar = new LoadingBar(() => this.env.now());
   private readonly cache: ImageCache;
   private readonly env: ViewerEnv;
   private readonly loader: ImageLoader;
   private readonly offs: (() => void)[] = [];
   private cur: Cur | null = null;
+  private removeCard: (() => void) | null = null;
+  private readonly snap: SnapBack;
+  private dragIndex = -1;
 
-  constructor(stage: HTMLElement, private readonly ctx: Ctx, private readonly opts: ViewerOptions) {
+  constructor(private readonly stage: HTMLElement, private readonly ctx: Ctx, private readonly opts: ViewerOptions) {
     const mobile = ctx.session.platform === 'android' || ctx.session.platform === 'ios';
     const budget = opts.budgetBytes ?? (mobile ? CACHE_BUDGET_BYTES_MOBILE : CACHE_BUDGET_BYTES_DESKTOP);
     this.loader = opts.loader ?? decodeImage;
     this.cache = new ImageCache(new ImageLru(budget), this.loader);
     this.env = opts.env ?? defaultEnv(stage);
+    this.snap = new SnapBack([this.element, 'transform'], [stage, 'background-color']);
+    this.element.style.visibility = 'hidden';
     this.element.alt = '';
     this.element.draggable = false;
-    this.errHost.hidden = true;
-    stage.append(this.element, this.errHost, this.bar.el);
-    this.offs.push(ctx.store.subscribe((s, prev) => this.onState(s, prev)), this.env.watch(() => this.update()));
+    // The pull-to-close backdrop: opaque until K reports pull progress.
+    stage.style.backgroundColor = 'rgb(0 0 0 / calc(1 - var(--pull, 0)))';
+    stage.append(this.element, this.bar.el);
+    this.offs.push(
+      ctx.store.subscribe((s, prev) => this.onState(s, prev)),
+      this.env.watch(() => this.update()),
+      this.env.watchDrag((on) => this.onDrag(on)),
+    );
     this.show();
   }
 
   dispose(): void {
     for (const off of this.offs) off();
     this.bar.dispose();
+    this.snap.cancel();
+    this.dropCard();
     this.cur = null;
     this.element.remove();
     this.bar.el.remove();
-    this.errHost.remove();
+    this.stage.style.backgroundColor = '';
   }
 
   geometry(): Geometry | null {
@@ -129,8 +135,8 @@ class StageView implements Viewer {
   private show(): void {
     const s = this.ctx.store.get();
     const item = s.listing?.images[s.index];
-    this.errHost.replaceChildren();
-    this.errHost.hidden = true;
+    this.dropCard();
+    this.snap.cancel(); // a swipe that turned the page shows the new image in place
     const cur: Cur | null = item
       ? { index: s.index, item, meta: null, thumb: null, full: null, want: null, asked: false, failed: false }
       : null;
@@ -199,13 +205,8 @@ class StageView implements Viewer {
 
   private async loadThumb(cur: Cur): Promise<void> {
     const url = this.ctx.src.thumbUrl(cur.item.path, THUMB_EDGE);
-    let img: HTMLImageElement;
-    try {
-      img = await this.loader(url);
-    } catch {
-      return; // the full image reports its own failure
-    }
-    if (this.cur !== cur || cur.full || cur.failed) return;
+    const img = await this.loader(url).catch(() => null); // the full image reports failures
+    if (!img || this.cur !== cur || cur.full || cur.failed) return;
     cur.thumb = natural(img);
     this.element.src = url;
     this.element.style.visibility = '';
@@ -213,14 +214,11 @@ class StageView implements Viewer {
   }
 
   private async fetchMeta(cur: Cur): Promise<void> {
-    try {
-      const m = await this.ctx.api.meta(cur.item.path);
-      if (this.cur !== cur || !(m.width > 0 && m.height > 0)) return;
-      cur.meta = { w: m.width, h: m.height };
-      this.update();
-    } catch {
-      // The image request reports failures; meta only refines the geometry.
-    }
+    // The image request reports failures; meta only refines the geometry.
+    const m = await this.ctx.api.meta(cur.item.path).catch(() => null);
+    if (!m || this.cur !== cur || !(m.width > 0 && m.height > 0)) return;
+    cur.meta = { w: m.width, h: m.height };
+    this.update();
   }
 
   private async fail(cur: Cur, url: string): Promise<void> {
@@ -230,10 +228,26 @@ class StageView implements Viewer {
     const err = await (this.opts.fetchError ?? fetchImageError)(url);
     if (this.cur !== cur) return;
     this.bar.end();
-    this.errHost.hidden = false;
-    renderErrorCard(this.errHost, err, cur.item.name);
+    // Retry re-runs the whole index (thumb, meta, full); L shows the button
+    // only for transient errors.
+    this.removeCard = renderErrorCard(this.stage, err, cur.item.name, () => {
+      if (this.cur === cur) this.show();
+    });
     this.opts.onFailed?.(cur.index, err);
     this.prefetchAround(cur);
+  }
+
+  private dropCard(): void {
+    this.removeCard?.();
+    this.removeCard = null;
+  }
+
+  /** Snap back only when the drag ended on the same image (no page turn)
+   * and motion is allowed; never transition while the finger is down. */
+  private onDrag(dragging: boolean): void {
+    if (dragging) this.dragIndex = this.cur?.index ?? -1;
+    if (dragging || this.cur?.index !== this.dragIndex || this.env.reducedMotion()) this.snap.cancel();
+    else this.snap.run();
   }
 
   private blank(): void {
@@ -248,7 +262,7 @@ class StageView implements Viewer {
     const raw = rotated(g.img, s.rotation);
     this.element.style.width = `${raw.w}px`;
     this.element.style.height = `${raw.h}px`;
-    this.element.style.transform = cssTransform(s.zoom, g, s.rotation);
+    this.element.style.transform = DRAG + cssTransform(s.zoom, g, s.rotation);
     this.checkResolution(g, s);
   }
 
@@ -257,13 +271,9 @@ class StageView implements Viewer {
   private checkResolution(g: Geometry, s: ViewState): void {
     const cur = this.cur;
     if (!cur?.full || cur.want === null || s.scrubbing || isWholeImage(cur.full.natural, cur.full.box, cur.meta)) return;
-    if (s.zoom.mode !== 'fit') {
-      const raw = rotated(g.img, s.rotation);
-      if (beyondLoaded(effectiveScale(s.zoom, g), raw, cur.full.natural)) this.loadFull(cur, null);
-      return;
-    }
-    const need = this.neededBox(cur);
-    if (grew(need, cur.want)) this.loadFull(cur, need);
+    const shown = effectiveScale(s.zoom, g);
+    const r = resolutionNeed(s.zoom.mode === 'fit', shown, rotated(g.img, s.rotation), cur.full.natural, this.neededBox(cur), cur.want);
+    if (r) this.loadFull(cur, r === 'original' ? null : r);
   }
 
   private prefetchAround(cur: Cur): void {

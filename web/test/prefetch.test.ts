@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LOADING_DELAY_MS as D, LOADING_MIN_VISIBLE_MS as M } from '../src/constants';
 import {
-  ImageCache, ImageLru, LoadingBar, fetchImageError, loadingBarNextChange, loadingBarVisible, prefetchWindow,
+  ImageCache, ImageLru, LoadingBar, SnapBack, defaultEnv, fetchImageError, loadingBarNextChange, loadingBarVisible, prefetchWindow,
 } from '../src/prefetch';
 
 function fakeImg(w: number, h: number): HTMLImageElement {
@@ -118,8 +118,8 @@ describe('LoadingBar', () => {
     vi.useFakeTimers();
     let t = 0;
     const advance = (ms: number): void => { t += ms; vi.advanceTimersByTime(ms); };
-    const el = document.createElement('div');
-    const bar = new LoadingBar(el, () => t);
+    const bar = new LoadingBar(() => t);
+    const el = bar.el;
     bar.start();
     advance(D - 1);
     expect(el.hidden).toBe(true);
@@ -157,5 +157,36 @@ describe('fetchImageError', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('<html>', { status: 502 }))));
     const e = await fetchImageError('/u');
     expect([e.code, e.detail]).toEqual(['io', 'HTTP 502']);
+  });
+});
+
+describe('stage environment', () => {
+  it('reports data-dragging appearing and disappearing on the stage', async () => {
+    const stage = document.createElement('div');
+    const seen: boolean[] = [];
+    const off = defaultEnv(stage).watchDrag((on) => seen.push(on));
+    stage.dataset.dragging = 'x';
+    await Promise.resolve();
+    stage.dataset.dragging = 'y'; // same drag, new axis: not a new event
+    await Promise.resolve();
+    delete stage.dataset.dragging;
+    await Promise.resolve();
+    off();
+    stage.dataset.dragging = 'x';
+    await Promise.resolve();
+    expect(seen).toEqual([true, false]);
+  });
+  it('SnapBack sets and clears its transitions; cancel clears at once', () => {
+    vi.useFakeTimers();
+    const a = document.createElement('div');
+    const snap = new SnapBack([a, 'transform']);
+    snap.run();
+    expect(a.style.transition).toBe('transform 150ms ease-out');
+    snap.cancel();
+    expect(a.style.transition).toBe('');
+    snap.run();
+    vi.advanceTimersByTime(150);
+    expect(a.style.transition).toBe('');
+    vi.useRealTimers();
   });
 });

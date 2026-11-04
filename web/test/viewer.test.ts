@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, HttpImageSource, type Api, type Meta, type Session } from '../src/api';
+import { ApiError, HttpImageSource, type Api, type Listing, type Meta, type Session } from '../src/api';
 import type { Ctx } from '../src/ctx';
 import { renderErrorCard } from '../src/errors';
 import { EscStack, Store, initialState } from '../src/state';
 import { mountViewer, type ViewerEnv } from '../src/viewer';
 import type { Box } from '../src/zoom';
 
-vi.mock('../src/errors', () => ({ renderErrorCard: vi.fn() }));
+const removeCard = vi.fn();
+vi.mock('../src/errors', () => ({ renderErrorCard: vi.fn(() => removeCard) }));
 
 const enc = (i: number): string => encodeURIComponent(`/d/p${i}.jpg`);
 const img = (i: number, w = 1000, h = 800, prio = 'current'): string => `/api/v1/img?p=${enc(i)}&w=${w}&h=${h}&prio=${prio}`;
@@ -21,6 +22,13 @@ function fakeImg(w: number, h: number): HTMLImageElement {
   return el;
 }
 
+function listingOf(n: number): Listing {
+  const images = Array.from({ length: n }, (_, i) => ({
+    name: `p${i}.jpg`, path: `/d/p${i}.jpg`, fmt: 'jpeg' as const, size: 1, mtime_ms: 0,
+  }));
+  return { dir: '/d', parent: null, images, dirs: [] };
+}
+
 function harness(o: { count?: number; dpr?: number; scrubbing?: boolean } = {}) {
   const loads = new Map<string, { ok: (i: HTMLImageElement) => void; fail: (e: Error) => void }>();
   const calls: string[] = [];
@@ -33,12 +41,13 @@ function harness(o: { count?: number; dpr?: number; scrubbing?: boolean } = {}) 
   let dpr = o.dpr ?? 1;
   let view: Box = { w: 1000, h: 800 };
   let changed = (): void => {};
-  const env: ViewerEnv = { dpr: () => dpr, view: () => view, now: () => 0, watch: (cb) => ((changed = cb), () => {}) };
-  const images = Array.from({ length: o.count ?? 5 }, (_, i) => ({
-    name: `p${i}.jpg`, path: `/d/p${i}.jpg`, fmt: 'jpeg' as const, size: 1, mtime_ms: 0,
-  }));
-  const listing = { dir: '/d', parent: null, images, dirs: [] };
-  const store = new Store({ ...initialState, listing, scrubbing: o.scrubbing ?? false });
+  let drag = (on: boolean): void => void on;
+  const motion = { reduced: false };
+  const env: ViewerEnv = {
+    dpr: () => dpr, view: () => view, now: () => 0, reducedMotion: () => motion.reduced,
+    watch: (cb) => ((changed = cb), () => {}), watchDrag: (cb) => ((drag = cb), () => {}),
+  };
+  const store = new Store({ ...initialState, listing: listingOf(o.count ?? 5), scrubbing: o.scrubbing ?? false });
   const session: Session = { api_version: 1, mode: 'desktop', platform: 'windows', start: null, roots: [] };
   const ctx: Ctx = { store, api, src: new HttpImageSource(), esc: new EscStack(), session, dispatch: () => {} };
   const stage = document.createElement('div');
@@ -62,11 +71,17 @@ function harness(o: { count?: number; dpr?: number; scrubbing?: boolean } = {}) 
       await flush();
     },
     setDpr: (d: number) => { dpr = d; changed(); },
+    drag: (on: boolean) => drag(on),
+    motion,
     setView: (b: Box) => { view = b; changed(); },
   };
 }
 
-afterEach(() => vi.mocked(renderErrorCard).mockClear());
+afterEach(() => {
+  vi.mocked(renderErrorCard).mockClear();
+  removeCard.mockClear();
+  vi.useRealTimers();
+});
 
 describe('progressive display', () => {
   it('shows the thumbnail, then the full image, then prefetches the window', async () => {
@@ -151,7 +166,7 @@ describe('failure', () => {
     expect(h.el.hasAttribute('src')).toBe(false);
     expect(h.el.style.visibility).toBe('hidden');
     const [host, err, name] = vi.mocked(renderErrorCard).mock.calls[0] ?? [];
-    expect([host?.hidden, err?.code, name]).toEqual([false, 'corrupt', 'p0.jpg']);
+    expect([host, err?.code, name]).toEqual([h.stage, 'corrupt', 'p0.jpg']);
     expect(h.failed).toEqual([[0, 'corrupt']]);
     expect(h.v.geometry()).toBeNull();
   });
@@ -160,9 +175,19 @@ describe('failure', () => {
     await h.reject(img(0));
     await h.resolve(thumb(0), 256, 192);
     expect(h.el.hasAttribute('src')).toBe(false);
-    const host = vi.mocked(renderErrorCard).mock.calls[0]?.[0];
+    expect(removeCard).not.toHaveBeenCalled();
     h.store.set({ index: 1 });
-    expect(host?.hidden).toBe(true);
+    expect(removeCard).toHaveBeenCalledTimes(1);
+  });
+  it('retry removes the card and loads the same index again', async () => {
+    const h = harness();
+    await h.reject(img(0));
+    const retry = vi.mocked(renderErrorCard).mock.calls[0]?.[3];
+    retry?.();
+    expect(removeCard).toHaveBeenCalledTimes(1);
+    expect(h.calls.filter((u) => u === img(0))).toHaveLength(2);
+    await h.resolve(img(0));
+    expect([h.el.getAttribute('src'), h.shown]).toEqual([img(0), [0]]);
   });
 });
 
@@ -221,10 +246,43 @@ describe('resolution changes', () => {
   });
 });
 
+describe('drag feedback (K)', () => {
+  it('follows --drag-x/--drag-y and fades the backdrop with --pull', async () => {
+    const h = harness();
+    await h.resolve(img(0));
+    expect(h.el.style.transform.startsWith('translate(var(--drag-x, 0px), var(--drag-y, 0px)) translate(')).toBe(true);
+    expect(h.stage.style.backgroundColor).toBe('rgb(0 0 0 / calc(1 - var(--pull, 0)))');
+  });
+  it('snaps back with a short transition only after a drag on the same image', async () => {
+    vi.useFakeTimers();
+    const h = harness();
+    await h.resolve(img(0));
+    h.drag(true);
+    expect(h.el.style.transition).toBe('');
+    h.drag(false);
+    expect(h.el.style.transition).toBe('transform 150ms ease-out');
+    expect(h.stage.style.transition).toBe('background-color 150ms ease-out');
+    vi.advanceTimersByTime(150);
+    expect([h.el.style.transition, h.stage.style.transition]).toEqual(['', '']);
+  });
+  it('no snap when the swipe turned the page, or under reduced motion', async () => {
+    const h = harness();
+    await h.resolve(img(0));
+    h.drag(true);
+    h.store.set({ index: 1 });
+    h.drag(false);
+    expect(h.el.style.transition).toBe('');
+    h.motion.reduced = true;
+    h.drag(true);
+    h.drag(false);
+    expect(h.el.style.transition).toBe('');
+  });
+});
+
 describe('dispose', () => {
   it('removes its elements and stops reacting', async () => {
     const h = harness();
-    expect(h.stage.children).toHaveLength(3);
+    expect(h.stage.children).toHaveLength(2);
     h.v.dispose();
     expect(h.stage.children).toHaveLength(0);
     h.store.set({ index: 2 });

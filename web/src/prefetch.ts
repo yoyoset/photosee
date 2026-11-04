@@ -1,6 +1,6 @@
 // What the viewer loads and when: prefetch window, decoded-image LRU, the
-// default loader, loading-bar timing, and the stage environment (DPR and
-// size) that triggers re-requests. Package I. The DOM-touching parts are
+// default loader, loading-bar timing, and the stage environment (DPR, size,
+// K's drag state) that triggers re-requests and the drag snap-back. Package I. The DOM-touching parts are
 // injectable (`ImageLoader`, `ViewerEnv`) so tests can drive the viewer.
 
 import { ApiError, type ErrorCode } from './api';
@@ -175,8 +175,11 @@ export class LoadingBar {
   private load: { start: number; done: number | null } | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(readonly el: HTMLElement, private readonly now: () => number) {
-    el.hidden = true;
+  readonly el = document.createElement('div');
+
+  constructor(private readonly now: () => number) {
+    this.el.style.cssText = 'position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent);pointer-events:none';
+    this.el.hidden = true;
   }
 
   start(): void {
@@ -212,6 +215,53 @@ export interface ViewerEnv {
   now(): number;
   /** Call `changed` on stage resize or DPR change; returns an unsubscribe. */
   watch(changed: () => void): () => void;
+  /** Call `changed(true)` when K's touch drag starts (data-dragging appears
+   * on the stage) and `changed(false)` when it ends. */
+  watchDrag(changed: (dragging: boolean) => void): () => void;
+  reducedMotion(): boolean;
+}
+
+// Not in constants.ts (contract file): a mechanical ease-back with no UX rule.
+const SNAP_BACK_MS = 150;
+
+/** A short transition on the given element/property pairs, cleared after it
+ * ran, so that nothing else (image changes, zoom, the finger itself) ever
+ * animates. */
+export class SnapBack {
+  private readonly targets: [HTMLElement, string][];
+  private timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(...targets: [HTMLElement, string][]) {
+    this.targets = targets;
+  }
+
+  run(): void {
+    this.set(true);
+    this.timer = setTimeout(() => this.set(false), SNAP_BACK_MS);
+  }
+
+  cancel(): void {
+    this.set(false);
+  }
+
+  private set(on: boolean): void {
+    clearTimeout(this.timer);
+    for (const [el, prop] of this.targets) el.style.transition = on ? `${prop} ${SNAP_BACK_MS}ms ease-out` : '';
+  }
+}
+
+function watchDragging(stage: HTMLElement, changed: (dragging: boolean) => void): () => void {
+  if (typeof MutationObserver === 'undefined') return () => {};
+  let was = 'dragging' in stage.dataset;
+  // A MutationObserver runs as a microtask, i.e. after K's pointerup handler
+  // has also dispatched any page turn, and before the next style recalc, so
+  // a transition set here still applies to the snap-back.
+  const mo = new MutationObserver(() => {
+    const now = 'dragging' in stage.dataset;
+    if (now !== was) changed((was = now));
+  });
+  mo.observe(stage, { attributes: true, attributeFilter: ['data-dragging'] });
+  return () => mo.disconnect();
 }
 
 function watchResize(stage: HTMLElement, changed: () => void): () => void {
@@ -236,5 +286,7 @@ export function defaultEnv(stage: HTMLElement): ViewerEnv {
     view: () => ({ w: stage.clientWidth || window.innerWidth, h: stage.clientHeight || window.innerHeight }),
     now: () => performance.now(),
     watch: (changed) => watchResize(stage, changed),
+    watchDrag: (changed) => watchDragging(stage, changed),
+    reducedMotion: () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   };
 }
