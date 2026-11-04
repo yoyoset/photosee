@@ -23,6 +23,9 @@
 
 !macro PS_UNASSOC EXT PROGID
   DeleteRegValue SHCTX "Software\Classes\.${EXT}\OpenWithProgids" "${PROGID}"
+  ; No empty husks left behind for a type nobody else registered.
+  DeleteRegKey /ifempty SHCTX "Software\Classes\.${EXT}\OpenWithProgids"
+  DeleteRegKey /ifempty SHCTX "Software\Classes\.${EXT}"
 !macroend
 
 !macro PS_PROGID PROGID TITLE
