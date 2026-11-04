@@ -1,0 +1,35 @@
+[package]
+name = "photosee-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "photosee"
+path = "src/main.rs"
+
+[dependencies]
+photosee-core.workspace = true
+photosee-server = { path = "../server" }
+axum.workspace = true
+tokio.workspace = true
+serde_json.workspace = true
+# `custom-protocol` is what the Tauri CLI enables for production builds; without
+# it the release binary would still be a "dev" build (no embedded assets path).
+tauri = { version = "=2.12.5", features = ["custom-protocol"] }
+# Newest stable 2.x (3.0.0-alpha.* targets tauri 3). Why exact: docs/deps.md.
+tauri-plugin-single-instance = "=2.5.5"
+# OS randomness for the session token (BCryptGenRandom on Windows).
+getrandom = "=0.3.4"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[dev-dependencies]
+tower.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

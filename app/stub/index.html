@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>PhotoSee</title>
+<style>html,body{margin:0;height:100%;background:#000;color:#ddd;font:14px/1.5 system-ui,sans-serif}
+pre{margin:0;padding:24px;white-space:pre-wrap}</style>
+<!-- Only shown when start-up fails: the real UI is served by the embedded
+     server. main.rs injects the message as window.__PHOTOSEE_ERROR__. -->
+<pre id="m"></pre>
+<script>document.getElementById('m').textContent = window.__PHOTOSEE_ERROR__ || '';</script>

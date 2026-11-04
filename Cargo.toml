@@ -1,8 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["core", "server"]
-# `app/` (Tauri shell) joins in M1 Wave 2. Workers only build core/server, so
-# nobody pays the Tauri compile cost until integration.
+members = ["core", "server", "app"]
+# `app/` (Tauri shell) is a member but not a default member: workers only
+# build core/server; `-p photosee-app` or --workspace builds the shell.
 default-members = ["core", "server"]
 # Spikes and tools are standalone crates with their own lockfiles.
 exclude = ["spikes", "tools"]

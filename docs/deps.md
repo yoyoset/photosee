@@ -33,6 +33,9 @@ on 2026-11-03.
 | tempfile | 3.27.0 | temp dirs in tests | dev only |
 | rawler | 0.8.0 | **test oracle only**, for RAW preview extraction | not SemVer; mmaps whole files, so never used at runtime |
 | tauri | 2.12.x | desktop/mobile shell | added in M1 Wave 2; ≥2.12 for PR #16050 and CVE-2026-42184 |
+| tauri-build | 2.7.4 | build script of `app/` (embeds the config, icon, manifest) | the version the M0 spike used |
+| tauri-plugin-single-instance | 2.5.5 | second launch hands its path to the running instance (resident mode) | newest stable 2.x on crates.io (2026-10-28), needs tauri ^2.12. 3.0.0-alpha.* is for tauri 3 and an alpha, so not used. Pinned in `app/Cargo.toml`, not workspace-wide |
+| getrandom | 0.3.4 | OS randomness (BCryptGenRandom) for the 32-byte session token | already in the lockfile through tauri, so no new code is pulled in; pinned in `app/Cargo.toml` |
 
 ## Web (devDependencies only; the shipped bundle has zero runtime deps)
 
