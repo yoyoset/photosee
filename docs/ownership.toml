@@ -98,3 +98,11 @@ paths = [
 paths = [
   "app/**", "scripts/build-app.ps1", "Cargo.toml", "Cargo.lock", "docs/deps.md",
 ]
+
+[C2]
+paths = [
+  "core/src/decode/jpeg_wic.rs", "core/src/decode/jpeg_wic/**", "core/src/encode_wic.rs",
+  "core/src/decode/std_formats.rs", "core/src/encode.rs", "core/src/pipeline.rs",
+  "core/src/decode/mod.rs", "core/src/lib.rs",
+  "core/tests/pipeline_*.rs", "core/tests/jpeg_wic_*.rs",
+]

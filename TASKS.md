@@ -50,6 +50,7 @@ merged, because both call into them. T (test top-up) runs last.
 ## M1 Wave 2
 | WP | owner | status | branch |
 |---|---|---|---|
+| C2 transcode speed (WIC JPEG decode with DCT scaling + WIC encode) | sonnet | running | wp/c2 |
 | W2-UI controller + boot | sonnet | merged 20bc8ea; 31 tests (web total 300); bundle 21986 B gzip; found the slideshow start-position bug (fixed) | wp/w2-ui |
 | W2-APP Tauri shell (resident mode, token, single instance) | sonnet | merged 9455fa9; exe 16.55 MiB; cold start to thumbnail 1.03-1.23 s, full 24 MP 1.8-2.0 s; resident second open: thumbnail 151-203 ms, full 0.95-1.07 s; idle 97-117 MiB private. requestFullscreen needs a user gesture, so host routes behind the guard | wp/w2-app |
 
