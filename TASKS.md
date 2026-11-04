@@ -68,6 +68,7 @@ with both a tree and thumbnails.
 |---|---|---|---|
 | groundwork: places, /ui-state, pick-folder | orchestrator | merged 52ffbe9 | main |
 | BR tree + grid + details + toolbar + status bar | sonnet | merged 237b0dd; 418 web tests; bundle 36.6 KB gzip; verified in the real portable build: a launch with no argument opens Pictures with tree + grid |
+| BR2 recent box, pause recording, tree ≤50%, thumbs to 640, single-image view | sonnet | merged 47f1f51; 466 web tests; bundle 39.9 KB gzip |
 | tray + background mode opt-in | orchestrator | merged 026ef01; close quits by default (measured); tray menu Open / Keep in background / Quit |
 
 ## M1 Wave 3
