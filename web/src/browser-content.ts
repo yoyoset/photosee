@@ -9,11 +9,14 @@ import type { BrowserItem } from './browser-items';
 import { MetaCache } from './browser-meta';
 import { TypeAhead, findPrefix } from './browser-typeahead';
 import { DetailsView } from './details';
+import type { Ctx } from './ctx';
 import { GridView, type ContentView } from './grid';
 import { moveIndex, type MoveKey } from './grid-geometry';
+import { SingleView } from './single';
 import type { UiPrefs, UiState, ViewMode } from './uistate';
 
 export interface ContentDeps {
+  ctx: Ctx;
   src: ImageSource;
   api: Pick<Api, 'meta'>;
   prefs: UiPrefs;
@@ -67,6 +70,11 @@ export class ContentHost {
       },
     };
     this.kind = p.view;
+    if (p.view === 'single') {
+      return new SingleView({ ...hooks, step: (d) => this.moveImage(d < 0 ? 'left' : 'right') }, {
+        ctx: this.d.ctx, dpr: this.d.dpr,
+      });
+    }
     if (p.view === 'details') {
       return new DetailsView(hooks, { sort: p.sort, meta: this.meta, onSort: this.d.sortBy });
     }
@@ -84,13 +92,27 @@ export class ContentHost {
     this.select(items.length === 0 ? -1 : Math.min(items.length - 1, Math.max(0, at)));
   }
 
+  /** Single view shows images only: a folder selection moves to the first image. */
+  private snap(i: number): number {
+    if (this.kind !== 'single' || this.items[i]?.kind === 'img') return i;
+    const first = this.items.findIndex((x) => x.kind === 'img');
+    return first < 0 ? i : first;
+  }
+
+  /** Select image number `index` of the listing (what the store calls index). */
+  selectImage(index: number): void {
+    const at = this.items.findIndex((x) => x.kind === 'img') + index;
+    if (at >= 0 && at !== this.cursor && this.items[at]?.kind === 'img') this.select(at);
+  }
+
   select(i: number, o: { reveal?: boolean; center?: boolean } = {}): void {
+    i = this.snap(i);
     this.cursor = i;
     this.view.setSelected(i);
     if (o.center) this.view.center(i);
     else if (o.reveal !== false) this.view.reveal(i);
     const it = this.selected;
-    if (it?.kind === 'img' && this.kind === 'grid') this.meta.want([it.path]);
+    if (it?.kind === 'img' && this.kind !== 'details') this.meta.want([it.path]);
     this.d.onSelect(it);
   }
 
@@ -109,14 +131,27 @@ export class ContentHost {
     }
   }
 
+  /** Single view: arrows, PgUp/PgDn, Home/End walk the images; folders are skipped. */
+  private moveImage(key: MoveKey): void {
+    const first = this.items.findIndex((x) => x.kind === 'img');
+    if (first < 0) return;
+    const cur = Math.max(first, this.cursor);
+    const to = key === 'home' ? first : key === 'end' ? this.items.length - 1
+      : key === 'left' || key === 'up' || key === 'pageup' ? cur - 1 : cur + 1;
+    const at = Math.min(this.items.length - 1, Math.max(first, to));
+    if (at !== this.cursor) this.select(at);
+  }
+
   private move(key: MoveKey): void {
     this.ahead.reset();
+    if (this.kind === 'single') return this.moveImage(key);
     const to = moveIndex(this.cursor, key, this.view.cols, this.items.length, this.view.pageRows, this.kind === 'grid');
     if (to >= 0 && to !== this.cursor) this.select(to);
   }
 
   /** Letters jump to the next name with that prefix; a space only continues a word. */
   private type(ch: string, now: number): boolean {
+    if (this.kind === 'single') return false;
     const prefix = this.ahead.push(ch, now);
     if (ch === ' ' && prefix.trim() === '') { this.ahead.reset(); return false; }
     const at = findPrefix(this.items.map((x) => x.name), prefix, this.cursor);

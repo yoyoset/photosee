@@ -18,6 +18,7 @@ import { sortListing } from './browser-sort';
 import { countsText, selectionText } from './browser-status';
 import { mountSplitter, clampTree } from './browser-splitter';
 import type { Ctx } from './ctx';
+import type { ViewState } from './state';
 import { showToast } from './errors';
 import { HINT_TOAST_MS } from './constants';
 import type { Host } from './host';
@@ -89,7 +90,7 @@ class BrowserImpl implements Browser {
     const sk = buildSkeleton(d.root, this.toolbar.el, this.tree.el, this.content.el);
     ({ tree$: this.tree$, split: this.split, empty: this.empty, statusL: this.statusL, statusR: this.statusR } = sk);
     this.offs.push(
-      ctx.store.subscribe((s, p) => { if (this.active && s.listing !== p.listing) this.showListing(); }),
+      ctx.store.subscribe((s, p) => this.onStore(s, p)),
       prefs.subscribe((p) => this.onPrefs(p)),
       mountSplitter(this.split, () => this.treeWidth(), (w) => this.setTreeWidth(w), () => window.innerWidth),
       onWindowResize(() => this.applyLayoutPrefs()),
@@ -112,7 +113,7 @@ class BrowserImpl implements Browser {
   private contentActions(): ContentDeps {
     const { ctx, prefs } = this.d;
     return {
-      src: ctx.src, api: ctx.api, prefs, dpr: this.d.dpr ?? (() => window.devicePixelRatio || 1),
+      ctx, src: ctx.src, api: ctx.api, prefs, dpr: this.d.dpr ?? (() => window.devicePixelRatio || 1),
       onSelect: (it) => this.onSelect(it),
       onOpen: (it) => this.openItem(it),
       onMenu: (it, x, y) => showMenu(itemEntries(it, () => this.openItem(it),
@@ -195,6 +196,13 @@ class BrowserImpl implements Browser {
     this.tree.setCurrent(l?.dir ?? null);
     this.syncToolbar();
     this.syncStatus();
+  }
+
+  private onStore(s: ViewState, p: ViewState): void {
+    if (!this.active) return;
+    if (s.listing !== p.listing) return this.showListing();
+    // The filmstrip of single view moves the store's index (a click on a thumbnail).
+    if (s.index !== p.index && this.d.prefs.get().view === 'single') this.content.selectImage(s.index);
   }
 
   private onSelect(it: BrowserItem | null): void {

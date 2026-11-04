@@ -127,12 +127,17 @@ export function mountFilmstrip(host: HTMLElement, ctx: Ctx): () => void {
   const strip = new Strip(ctx);
   host.append(strip.el);
   window.addEventListener('resize', strip.render);
+  // The browser's single view changes the strip's width without a window resize
+  // (tree toggled or dragged), and the centring depends on that width.
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => strip.render()) : null;
+  ro?.observe(strip.el);
   const unsub = ctx.store.subscribe((s, prev) => {
     if (s.listing !== prev.listing || s.index !== prev.index) strip.render();
   });
   strip.render();
   return () => {
     unsub();
+    ro?.disconnect();
     window.removeEventListener('resize', strip.render);
     strip.el.remove();
   };

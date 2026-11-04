@@ -47,3 +47,12 @@ export const SAVE_DEBOUNCE_MS = 500;
 export const META_DEBOUNCE_MS = 150;
 export const META_CONCURRENCY = 4;
 export const TYPEAHEAD_RESET_MS = 1000;
+
+/** Single-image view: the requested box is the pane rounded up to this many
+ * device px, so a small window resize keeps the same URL (and cache entry). */
+export const SINGLE_BOX_STEP_PX = 64;
+/** Images kept decoded ahead/behind in single view: next 2, previous 1. */
+export const SINGLE_AHEAD = 2;
+export const SINGLE_BEHIND = 1;
+/** Decoded neighbours kept (current + prefetched). */
+export const SINGLE_CACHE = 6;
