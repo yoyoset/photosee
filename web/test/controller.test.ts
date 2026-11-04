@@ -167,7 +167,7 @@ describe('panels, scrub, fullscreen', () => {
 describe('Esc order', () => {
   it('unwinds panel, zoom, fullscreen, then closes the window', async () => {
     const r = rig();
-    r.ctl.registerEsc();
+    r.ctl.registerEsc(r.host);
     let panelOpen = true;
     r.ctx.esc.register('panel', () => {
       if (!panelOpen) return false;

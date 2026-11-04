@@ -23,7 +23,7 @@ export interface Controller {
   dispatch: (a: Action) => void;
   nav: Navigator;
   /** Registers the zoom / fullscreen / window Esc layers. Call once after mount. */
-  registerEsc: () => () => void;
+  registerEsc: (host: Host) => () => void;
 }
 
 export function createController(getCtx: () => Ctx, getParts: () => Parts): Controller {
@@ -50,7 +50,7 @@ export function createController(getCtx: () => Ctx, getParts: () => Parts): Cont
     }
   };
 
-  return { dispatch, nav, registerEsc: () => registerEscLayers(getCtx(), getParts().host) };
+  return { dispatch, nav, registerEsc: (host) => registerEscLayers(getCtx(), host) };
 }
 
 export function createDispatch(getCtx: () => Ctx, getParts: () => Parts): (a: Action) => void {
