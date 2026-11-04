@@ -3,16 +3,6 @@
 //! Why: `image`'s encoder takes ~150 ms for a 2160x1440 frame; WIC's takes
 //! ~29 ms (release, `core/tests/pipeline_bench.rs`).
 //!
-//! The pinned `windows` crate gates `IWICBitmapEncoder::CreateNewFrame` and
-//! `IWICBitmapFrameEncode::Initialize` (both mention `IPropertyBag2`) behind
-//! `Win32_System_Com_StructuredStorage`, which the workspace manifest does
-//! not enable (a full-workspace build gets it by feature unification, a
-//! `-p photosee-core` build does not). So those two slots are called through
-//! the vtable, found relative to their documented neighbours, and the
-//! property bag is written through a hand-declared `IPropertyBag2::Write`.
-//! All of that lives here; asking the orchestrator to enable the feature
-//! would let it all go.
-//!
 //! Any failure returns an error and `encode::encode` falls back to `image`.
 
 use crate::decode::jpeg_wic::com::{ComGuard, wic};
@@ -20,34 +10,21 @@ use crate::error::{Error, Result};
 use crate::types::Rgba8;
 use std::ffi::c_void;
 use windows::Win32::Graphics::Imaging::*;
+use windows::Win32::System::Com::StructuredStorage::{IPropertyBag2, PROPBAG2};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance};
 use windows::Win32::System::Com::{IStream, STREAM_SEEK_CUR};
-use windows::core::{GUID, HRESULT, IUnknown, Interface};
+use windows::Win32::System::Variant::VT_R4;
+use windows::core::{HRESULT, Interface, PWSTR};
 
-/// Room for the JPEG header and tables on top of the worst case (raw size).
-const SLACK: usize = 64 * 1024;
-const VT_R4: u16 = 4;
+/// PROPBAG2_TYPE_DATA (propbag2.h); the crate keeps the constant under Ole.
 const PROPBAG2_TYPE_DATA: u32 = 1;
+type WriteFn =
+    unsafe extern "system" fn(*mut c_void, u32, *const PROPBAG2, *const RawVariant) -> HRESULT;
 
-type NewFrameFn =
-    unsafe extern "system" fn(*mut c_void, *mut *mut c_void, *mut *mut c_void) -> HRESULT;
-type FrameInitFn = unsafe extern "system" fn(*mut c_void, *mut c_void) -> HRESULT;
-type BagWriteFn =
-    unsafe extern "system" fn(*mut c_void, u32, *mut PropBag2, *mut RawVariant) -> HRESULT;
-
-/// `PROPBAG2` (propbag2.h), declared here because its module is gated.
-#[repr(C)]
-struct PropBag2 {
-    dw_type: u32,
-    vt: u16,
-    cf_type: u16,
-    dw_hint: u32,
-    name: *mut u16,
-    clsid: GUID,
-}
-
-/// `VARIANT` holding a float: the union is 16 bytes on x64 (BRECORD is two
-/// pointers) and 8 on x86; 16 covers both, only the first 4 are read.
+/// `VARIANT` holding a float. The crate's own `VARIANT` needs
+/// `Win32_System_Ole`, which the manifest does not enable. The union is 16
+/// bytes on x64 (BRECORD is two pointers) and 8 on x86; 16 covers both, only
+/// the first 4 are read.
 #[repr(C)]
 struct RawVariant {
     vt: u16,
@@ -55,16 +32,8 @@ struct RawVariant {
     value: [u64; 2],
 }
 
-/// The vtable entry `back` slots before the field at `anchor`.
-///
-/// # Safety
-/// `anchor` must point at a field of a vtable struct with at least `back`
-/// pointer-sized slots before it, all of them function pointers of type `F`.
-unsafe fn slot_before<F: Copy>(anchor: *const usize, back: usize) -> F {
-    debug_assert_eq!(std::mem::size_of::<F>(), std::mem::size_of::<usize>());
-    // SAFETY: per the contract; fn pointers and usize have the same size.
-    unsafe { std::mem::transmute_copy(&*anchor.sub(back)) }
-}
+/// Room for the JPEG header and tables on top of the worst case (raw size).
+const SLACK: usize = 64 * 1024;
 
 /// RGBA (opaque, checked by the caller) -> tightly packed BGR, the JPEG
 /// codec's native layout.
@@ -103,8 +72,7 @@ pub fn jpeg(img: &Rgba8, quality: u8) -> Result<Vec<u8>> {
 unsafe fn write(buf: *mut u8, len: u32, dim: (u32, u32, u32), q: u8, bgr: &[u8]) -> Result<usize> {
     let (w, h, stride) = dim;
     // SAFETY (whole body): plain factory/interface calls on live objects; the
-    // raw vtable calls match the documented signatures and are given
-    // pointers owned by this function.
+    // stream gets the raw buffer pointer (see `jpeg`).
     unsafe {
         let factory = CoCreateInstance::<_, IWICImagingFactory>(
             &CLSID_WICImagingFactory,
@@ -122,11 +90,13 @@ unsafe fn write(buf: *mut u8, len: u32, dim: (u32, u32, u32), q: u8, bgr: &[u8])
             enc.Initialize(&istream, WICBitmapEncoderNoCache),
             "Encoder.Initialize",
         )?;
-        let (frame, bag) = new_frame(&enc)?;
+        let (mut frame, mut bag) = (None, None);
+        wic(enc.CreateNewFrame(&mut frame, &mut bag), "CreateNewFrame")?;
+        let (Some(frame), Some(bag)) = (frame, bag) else {
+            return Err(Error::corrupt("WIC CreateNewFrame returned null"));
+        };
         set_quality(&bag, q)?;
-        let anchor = &frame.vtable().SetSize as *const _ as *const usize;
-        let finit: FrameInitFn = slot_before(anchor, 1);
-        wic(finit(frame.as_raw(), bag.as_raw()).ok(), "Frame.Initialize")?;
+        wic(frame.Initialize(&bag), "Frame.Initialize")?;
         wic(frame.SetSize(w, h), "SetSize")?;
         let mut fmt = GUID_WICPixelFormat24bppBGR;
         wic(frame.SetPixelFormat(&mut fmt), "SetPixelFormat")?;
@@ -147,60 +117,33 @@ unsafe fn write(buf: *mut u8, len: u32, dim: (u32, u32, u32), q: u8, bgr: &[u8])
     }
 }
 
-/// `CreateNewFrame` through the vtable (gated in the crate). Returns the
-/// frame and its encoder-options property bag, both owned.
+/// Writes `ImageQuality` (a float, 0..1) into the encoder-options bag.
 ///
-/// # Safety
-/// `enc` is a live encoder.
-unsafe fn new_frame(enc: &IWICBitmapEncoder) -> Result<(IWICBitmapFrameEncode, IUnknown)> {
-    let anchor = &enc.vtable().Commit as *const _ as *const usize;
-    let (mut frame, mut bag) = (std::ptr::null_mut(), std::ptr::null_mut());
-    // SAFETY: `CreateNewFrame` sits one slot before `Commit`; both out
-    // pointers are valid locals, and on success they hold owned interfaces.
-    let hr = unsafe {
-        let f: NewFrameFn = slot_before(anchor, 1);
-        f(enc.as_raw(), &mut frame, &mut bag)
-    };
-    wic(hr.ok(), "CreateNewFrame")?;
-    if frame.is_null() || bag.is_null() {
-        return Err(Error::corrupt("WIC CreateNewFrame returned null"));
-    }
-    // SAFETY: success and non-null: both are owned references.
-    let pair = unsafe {
-        (
-            IWICBitmapFrameEncode::from_raw(frame),
-            IUnknown::from_raw(bag),
-        )
-    };
-    Ok(pair)
-}
-
-/// Writes `ImageQuality` (a float, 0..1) into the property bag.
-///
-/// # Safety
-/// `bag` is a live `IPropertyBag2`.
-unsafe fn set_quality(bag: &IUnknown, quality: u8) -> Result<()> {
+/// `IPropertyBag2::Write` is the one call still made through the vtable: the
+/// crate gates it and `VARIANT` behind `Win32_System_Ole`, which the
+/// manifest does not enable. `PROPBAG2` is the crate's own.
+fn set_quality(bag: &IPropertyBag2, quality: u8) -> Result<()> {
     let mut name: Vec<u16> = "ImageQuality\0".encode_utf16().collect();
-    let mut prop = PropBag2 {
-        dw_type: PROPBAG2_TYPE_DATA,
+    let prop = PROPBAG2 {
+        dwType: PROPBAG2_TYPE_DATA,
         vt: VT_R4,
-        cf_type: 0,
-        dw_hint: 0,
-        name: name.as_mut_ptr(),
-        clsid: GUID::zeroed(),
+        pstrName: PWSTR(name.as_mut_ptr()),
+        ..Default::default()
     };
     let value = f32::from(quality.clamp(1, 100)) / 100.0;
-    let mut var = RawVariant {
-        vt: VT_R4,
+    let value = RawVariant {
+        vt: VT_R4.0,
         reserved: [0; 3],
         value: [u64::from(value.to_bits()), 0],
     };
-    // SAFETY: IPropertyBag2 is IUnknown (3 slots) + Read + Write, so Write is
-    // slot 4 (propbag2.h); the struct layouts match PROPBAG2 and VARIANT.
+    // SAFETY: `Write` is the slot right before `CountProperties` (propbag2.h:
+    // Read, Write, CountProperties), found from that field so the layout comes
+    // from the crate's own vtable struct; the arguments are live locals and
+    // `name` outlives the call.
     let hr = unsafe {
-        let vt = *(bag.as_raw() as *const *const usize);
-        let write: BagWriteFn = std::mem::transmute_copy(&*vt.add(4));
-        write(bag.as_raw(), 1, &mut prop, &mut var)
+        let anchor = &bag.vtable().CountProperties as *const _ as *const usize;
+        let write: WriteFn = std::mem::transmute_copy(&*anchor.sub(1));
+        write(bag.as_raw(), 1, &prop, &value)
     };
     wic(hr.ok(), "IPropertyBag2.Write(ImageQuality)")
 }
