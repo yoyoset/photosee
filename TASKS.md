@@ -20,7 +20,7 @@ Blocked on the user: NAS share path (to run M0-S), private RAW/HEIC samples
 (for M0-R's real-file test).
 
 ## G0 decision (2026-11-04)
-**Resident mode.** The user was offered resident mode vs a native Windows
+**Resident mode** (revised 2026-11-04: now opt-in from the tray, off by default, after the user objected to an invisible resident process). The user was offered resident mode vs a native Windows
 shell and replied "continue" without choosing, so the recommended option
 stands. Closing the window hides it; a second launch hands its argument
 to the running instance. That leaves ~1 s for the first open of the day
@@ -67,7 +67,8 @@ with both a tree and thumbnails.
 | WP | owner | status | branch |
 |---|---|---|---|
 | groundwork: places, /ui-state, pick-folder | orchestrator | merged 52ffbe9 | main |
-| BR tree + grid + details + toolbar + status bar | sonnet | running | wp/br |
+| BR tree + grid + details + toolbar + status bar | sonnet | merged 237b0dd; 418 web tests; bundle 36.6 KB gzip; verified in the real portable build: a launch with no argument opens Pictures with tree + grid |
+| tray + background mode opt-in | orchestrator | merged 026ef01; close quits by default (measured); tray menu Open / Keep in background / Quit |
 
 ## M1 Wave 3
 | WP | owner | status | branch |
