@@ -71,7 +71,9 @@ function begin(ev: { index: number; count: number }, cfg: Cfg, rand: () => numbe
   if (count === 0) return [idle, { type: 'stopped', reason: 'end' }];
   const idx = Number.isFinite(ev.index) ? Math.min(count - 1, Math.max(0, Math.floor(ev.index))) : 0;
   // The current image is already on screen, so no `show`: the UI just starts its timer.
-  return [{ phase: 'playing', pos: 0, order: makeOrder(count, idx, cfg, rand) }, NONE];
+  const order = makeOrder(count, idx, cfg, rand);
+  // pos points at the image on screen: idx in identity order, 0 when shuffled.
+  return [{ phase: 'playing', pos: Math.max(0, order.indexOf(idx)), order }, NONE];
 }
 
 /** order[pos]; callers guarantee a non-empty order and an in-range pos. */

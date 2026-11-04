@@ -30,8 +30,10 @@ const iota = (n: number) => Array.from({ length: n }, (_, i) => i);
 describe('off', () => {
   it('start: plays from the current image in identity order, no effect', () => {
     const [s, e] = run(idle, { type: 'start', index: 2, count: 5 });
-    expect(s).toEqual({ phase: 'playing', pos: 0, order: [0, 1, 2, 3, 4] });
+    expect(s).toEqual({ phase: 'playing', pos: 2, order: [0, 1, 2, 3, 4] });
     expect(e).toEqual(NONE);
+    // The first tick shows the image after the current one, not image 1.
+    expect(run(s, { type: 'tick' })[1]).toEqual({ type: 'show', index: 3 });
   });
   it('start with shuffle: [index, ...permutation of the rest]', () => {
     const [s, e] = run(idle, { type: 'start', index: 3, count: 6 }, shuf, seeded(1));
@@ -201,12 +203,13 @@ describe('long run', () => {
     const rand = seeded(5);
     let [s] = step(idle, { type: 'start', index: 4, count: 7 }, cfg, rand);
     const order = [...s.order];
+    const p0 = s.pos; // 4 in identity order, 0 when shuffled
     for (let i = 0; i < 1000; i++) {
       let e: SlideEffect;
       [s, e] = step(s, { type: i % 3 === 0 ? 'image_failed' : 'tick' }, cfg, rand);
       expect(s.phase).toBe('playing');
       expect(s.order).toEqual(order); // loop never redraws the shuffle
-      expect(s.pos).toBe((i + 1) % 7);
+      expect(s.pos).toBe((p0 + i + 1) % 7);
       expect(e).toEqual({ type: 'show', index: order[s.pos] ?? -1 });
     }
   });
