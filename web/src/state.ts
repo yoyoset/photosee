@@ -8,6 +8,9 @@ import type { ImageItem, Listing, Settings } from './api';
 export type ZoomMode = 'fit' | 'actual' | 'custom';
 
 export interface ViewState {
+  /** Which of the two screens is up. Added by package BR: the browser (folder
+   * tree + thumbnails) is the default; the viewer is the black stage. */
+  mode: 'browser' | 'viewer';
   /** Folder the user opened; "next folder" never leaves it. */
   root: string | null;
   listing: Listing | null;
@@ -24,6 +27,7 @@ export interface ViewState {
 }
 
 export const initialState: ViewState = {
+  mode: 'viewer',
   root: null,
   listing: null,
   index: 0,
