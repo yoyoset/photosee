@@ -84,3 +84,10 @@ paths = [
   "web/test/settings.test.ts", "web/test/slideshow-ui.test.ts", "web/test/errors.test.ts",
   "web/test/help.test.ts",
 ]
+
+# ---- M1 Wave 2 ----
+[W2-UI]
+paths = [
+  "web/src/controller.ts", "web/src/controller-*.ts", "web/src/host.ts", "web/src/main.ts",
+  "web/test/controller*.test.ts", "web/test/main*.test.ts",
+]

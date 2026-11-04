@@ -47,6 +47,12 @@ merged, because both call into them. T (test top-up) runs last.
 | K keys/gestures | sonnet | merged 7e671b5 + review fix; 59 tests; edge clicks changed to immediate (brief had them wait 300 ms); drag feedback via --drag-x/--drag-y/--pull | wp/k |
 | L settings/help/slideshow-ui/errors | sonnet | merged 645da34; 43 tests against the real step(); handles: panel {open,close,toggle}, slideshow {imageShown,imageFailed,folderLoaded,noNextFolder}, fade class ps-fade on #stage | wp/l |
 
+## M1 Wave 2
+| WP | owner | status | branch |
+|---|---|---|---|
+| W2-UI controller + boot | sonnet | running | wp/w2-ui |
+| W2-APP Tauri shell (resident mode, token, single instance) | - | todo, after W2-UI | |
+
 ### C2: transcode speed (open, measured 2026-11-04)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
 6000x4000 q92: decode 411 ms, resize 86 ms (CatmullRom), encode 170 ms, total 681 ms.
