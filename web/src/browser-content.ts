@@ -21,6 +21,8 @@ export interface ContentDeps {
   /** The selection moved (or was cleared). */
   onSelect(item: BrowserItem | null): void;
   onOpen(item: BrowserItem): void;
+  /** Right-click on an item (already selected), at viewport point x, y. */
+  onMenu(item: BrowserItem, x: number, y: number): void;
   /** Dimensions arrived for some images. */
   onDims(): void;
   /** Ctrl+wheel on the grid. */
@@ -55,7 +57,15 @@ export class ContentHost {
 
   private create(): ContentView {
     const p = this.d.prefs.get();
-    const hooks = { select: (i: number) => this.select(i), open: (i: number) => this.open(i) };
+    const hooks = {
+      select: (i: number) => this.select(i),
+      open: (i: number) => this.open(i),
+      menu: (i: number, x: number, y: number) => {
+        this.select(i);
+        const it = this.items[i];
+        if (it) this.d.onMenu(it, x, y);
+      },
+    };
     this.kind = p.view;
     if (p.view === 'details') {
       return new DetailsView(hooks, { sort: p.sort, meta: this.meta, onSort: this.d.sortBy });

@@ -10,6 +10,8 @@ export interface TreeHooks {
   open(path: string): void;
   /** Take a recent or network entry off its list. */
   remove(node: TreeNode): void;
+  /** Empty the whole recent list (button on its header). */
+  clearRecent(): void;
 }
 
 const KEYS: Record<string, TreeKey> = {
@@ -60,7 +62,19 @@ export class TreeView {
     h.className = 'tr-head';
     h.textContent = r.label;
     h.setAttribute('role', 'presentation');
+    if (r.id === 'recent') h.append(this.clearButton());
     return h;
+  }
+
+  private clearButton(): HTMLElement {
+    const b = document.createElement('button');
+    b.className = 'tr-clear';
+    b.type = 'button';
+    b.tabIndex = -1;
+    b.textContent = t('br.clear_recent');
+    b.title = t('br.clear_recent_tip');
+    b.addEventListener('click', (e) => { e.stopPropagation(); this.hooks.clearRecent(); });
+    return b;
   }
 
   private row(r: Extract<Row, { kind: 'node' }>, cur: TreeNode | null): HTMLElement {

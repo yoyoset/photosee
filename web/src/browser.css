@@ -160,3 +160,15 @@ button.dh:hover { background: var(--hover); color: var(--txt); }
 .dr.sel { background: var(--sel-idle); color: #fff; }
 .dr.sel .dc { color: #d8d8d8; }
 .vv:focus .dr.sel { background: var(--sel); outline: 1px solid var(--accent); outline-offset: -1px; }
+
+/* "Clear" on the Recent header: quiet until hovered, like the row × buttons. */
+.tr-head { display: flex; align-items: center; justify-content: space-between; }
+.tr-clear { padding: 0 4px; font: inherit; letter-spacing: 0; color: var(--dim); background: none; border: 0; border-radius: 2px; cursor: pointer; opacity: 0; }
+.tr:hover .tr-clear, .tr-clear:focus-visible { opacity: 1; }
+.tr-clear:hover { color: var(--txt); background: var(--line); }
+
+/* Right-click menu (browser-menu.ts). It lives on <body>, outside .br, so it
+   spells out the .br palette instead of using its variables. */
+.br-menu { position: fixed; z-index: 60; min-width: 180px; padding: 4px 0; background: #1e1e1e; border: 1px solid #2a2a2a; box-shadow: 0 4px 16px rgb(0 0 0 / 0.5); }
+.br-menu-item { display: block; width: 100%; padding: 6px 14px; text-align: left; font: 13px/1.4 var(--font); color: #e6e6e6; background: none; border: 0; cursor: default; }
+.br-menu-item:hover, .br-menu-item:focus-visible { background: #25364d; color: #fff; outline: none; }

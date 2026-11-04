@@ -8,7 +8,7 @@ import type { BrowserItem } from './browser-items';
 import type { MetaCache } from './browser-meta';
 import type { SortDir, SortKey } from './browser-sort';
 import { formatBytes, formatDate, formatDims, typeLabel } from './browser-status';
-import { middleLabel, type ContentHooks, type ContentView } from './grid';
+import { bindMenu, middleLabel, type ContentHooks, type ContentView } from './grid';
 import { listLayout } from './grid-geometry';
 import { VirtualView } from './grid-virtual';
 import { t, type Key } from './i18n';
@@ -54,6 +54,7 @@ export class DetailsView implements ContentView {
     this.view.el.setAttribute('role', 'listbox');
     this.view.el.addEventListener('click', (e) => this.hit(e, hooks.select));
     this.view.el.addEventListener('dblclick', (e) => this.hit(e, hooks.open));
+    bindMenu(this.view.el, (t) => this.view.indexAt(t), hooks);
     this.el.append(this.head, this.view.el);
     this.setSort(o.sort.key, o.sort.dir);
   }

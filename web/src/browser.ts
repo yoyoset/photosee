@@ -26,6 +26,7 @@ import { TreeView } from './tree';
 import type { UiPrefs, UiState } from './uistate';
 import { FIT } from './zoom';
 import { clampThumb } from './grid-geometry';
+import { itemEntries, showMenu } from './browser-menu';
 import type { Navigator } from './controller-nav';
 
 export interface BrowserDeps {
@@ -78,6 +79,7 @@ class BrowserImpl implements Browser {
       remove: (n) => prefs.set(n.section === 'recent'
         ? { recent: prefs.get().recent.filter((x) => x !== n.path) }
         : { network: prefs.get().network.filter((x) => x !== n.path) }),
+      clearRecent: () => prefs.set({ recent: [] }),
     });
     this.content = new ContentHost(this.contentActions());
     this.toolbar = this.buildToolbar();
@@ -132,6 +134,8 @@ class BrowserImpl implements Browser {
       src: ctx.src, api: ctx.api, prefs, dpr: this.d.dpr ?? (() => window.devicePixelRatio || 1),
       onSelect: (it) => this.onSelect(it),
       onOpen: (it) => this.openItem(it),
+      onMenu: (it, x, y) => showMenu(itemEntries(it, () => this.openItem(it),
+        () => { this.openItem(it); this.d.ctx.dispatch({ type: 'toggle_slideshow' }); }), x, y),
       onDims: () => this.syncStatus(),
       zoomThumb: (delta) => this.setThumb(prefs.get().thumb + delta, true),
       sortBy: (key) => {

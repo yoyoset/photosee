@@ -30,6 +30,18 @@ export interface ContentView {
 export interface ContentHooks {
   select(i: number): void;
   open(i: number): void;
+  /** Right-click (or the menu key) on item `i`, at viewport point x, y. */
+  menu(i: number, x: number, y: number): void;
+}
+
+/** Shared by grid and details: right-click on an item opens our menu. */
+export function bindMenu(el: HTMLElement, indexAt: (t: EventTarget | null) => number, hooks: ContentHooks): void {
+  el.addEventListener('contextmenu', (e) => {
+    const i = indexAt(e.target);
+    if (i < 0) return;
+    e.preventDefault();
+    hooks.menu(i, e.clientX, e.clientY);
+  });
 }
 
 export interface GridOpts {
@@ -78,6 +90,7 @@ export class GridView implements ContentView {
     this.applyVars();
     el.addEventListener('click', (e) => this.hit(e, hooks.select));
     el.addEventListener('dblclick', (e) => this.hit(e, hooks.open));
+    bindMenu(el, (t) => this.view.indexAt(t), hooks);
     el.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     // 'error' does not bubble: one capture listener instead of one per image.
     el.addEventListener('error', (e) => this.onBroken(e.target), true);
