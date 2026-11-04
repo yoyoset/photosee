@@ -8,29 +8,13 @@
 use crate::decode::jpeg_wic::com::{ComGuard, wic};
 use crate::error::{Error, Result};
 use crate::types::Rgba8;
-use std::ffi::c_void;
 use windows::Win32::Graphics::Imaging::*;
 use windows::Win32::System::Com::StructuredStorage::{IPropertyBag2, PROPBAG2};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance};
 use windows::Win32::System::Com::{IStream, STREAM_SEEK_CUR};
-use windows::Win32::System::Variant::VT_R4;
-use windows::core::{HRESULT, Interface, PWSTR};
-
-/// PROPBAG2_TYPE_DATA (propbag2.h); the crate keeps the constant under Ole.
-const PROPBAG2_TYPE_DATA: u32 = 1;
-type WriteFn =
-    unsafe extern "system" fn(*mut c_void, u32, *const PROPBAG2, *const RawVariant) -> HRESULT;
-
-/// `VARIANT` holding a float. The crate's own `VARIANT` needs
-/// `Win32_System_Ole`, which the manifest does not enable. The union is 16
-/// bytes on x64 (BRECORD is two pointers) and 8 on x86; 16 covers both, only
-/// the first 4 are read.
-#[repr(C)]
-struct RawVariant {
-    vt: u16,
-    reserved: [u16; 3],
-    value: [u64; 2],
-}
+use windows::Win32::System::Ole::PROPBAG2_TYPE_DATA;
+use windows::Win32::System::Variant::{VARIANT, VT_R4};
+use windows::core::{Interface, PWSTR};
 
 /// Room for the JPEG header and tables on top of the worst case (raw size).
 const SLACK: usize = 64 * 1024;
@@ -118,32 +102,19 @@ unsafe fn write(buf: *mut u8, len: u32, dim: (u32, u32, u32), q: u8, bgr: &[u8])
 }
 
 /// Writes `ImageQuality` (a float, 0..1) into the encoder-options bag.
-///
-/// `IPropertyBag2::Write` is the one call still made through the vtable: the
-/// crate gates it and `VARIANT` behind `Win32_System_Ole`, which the
-/// manifest does not enable. `PROPBAG2` is the crate's own.
 fn set_quality(bag: &IPropertyBag2, quality: u8) -> Result<()> {
     let mut name: Vec<u16> = "ImageQuality\0".encode_utf16().collect();
     let prop = PROPBAG2 {
-        dwType: PROPBAG2_TYPE_DATA,
+        dwType: PROPBAG2_TYPE_DATA.0 as u32,
         vt: VT_R4,
         pstrName: PWSTR(name.as_mut_ptr()),
         ..Default::default()
     };
-    let value = f32::from(quality.clamp(1, 100)) / 100.0;
-    let value = RawVariant {
-        vt: VT_R4.0,
-        reserved: [0; 3],
-        value: [u64::from(value.to_bits()), 0],
-    };
-    // SAFETY: `Write` is the slot right before `CountProperties` (propbag2.h:
-    // Read, Write, CountProperties), found from that field so the layout comes
-    // from the crate's own vtable struct; the arguments are live locals and
-    // `name` outlives the call.
-    let hr = unsafe {
-        let anchor = &bag.vtable().CountProperties as *const _ as *const usize;
-        let write: WriteFn = std::mem::transmute_copy(&*anchor.sub(1));
-        write(bag.as_raw(), 1, &prop, &value)
-    };
-    wic(hr.ok(), "IPropertyBag2.Write(ImageQuality)")
+    let value = VARIANT::from(f32::from(quality.clamp(1, 100)) / 100.0);
+    // SAFETY: one property and one value, both live locals; `name` outlives
+    // the call.
+    wic(
+        unsafe { bag.Write(1, &prop, &value) },
+        "IPropertyBag2.Write(ImageQuality)",
+    )
 }
