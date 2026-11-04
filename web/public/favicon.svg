@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- PhotoSee logo, source of every icon size (scripts/make-icons.ps1).
+       Tile: indigo -> cyan. Glyph: mountains and sun (a photo) inside
+       viewfinder corners (seeing). Flat white, so it survives 16 px. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4263eb"/>
+      <stop offset="1" stop-color="#0c8599"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="frame">
+      <rect x="232" y="232" width="560" height="560" rx="40"/>
+    </clipPath>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#tile)"/>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#sheen)"/>
+  <!-- viewfinder corners -->
+  <g fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 330 V230 Q200 200 230 200 H330"/>
+    <path d="M694 200 H794 Q824 200 824 230 V330"/>
+    <path d="M824 694 V794 Q824 824 794 824 H694"/>
+    <path d="M330 824 H230 Q200 824 200 794 V694"/>
+  </g>
+  <!-- the photo: sun and two ridges, clipped to the inner frame -->
+  <g clip-path="url(#frame)">
+    <circle cx="640" cy="388" r="72" fill="#ffffff"/>
+    <path d="M232 792 L432 520 Q448 498 464 520 L560 652 L792 792 Z" fill="#ffffff" fill-opacity="0.55"/>
+    <path d="M300 792 L520 560 Q536 543 552 560 L792 792 Z" fill="#ffffff"/>
+  </g>
+</svg>
