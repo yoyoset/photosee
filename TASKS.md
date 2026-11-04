@@ -36,16 +36,33 @@ merged, because both call into them. T (test top-up) runs last.
 |---|---|---|---|
 | A scan/sort/nav | sonnet | merged 1af9ab7; 23 tests; next from a leaf = 3 read_dir, flat in sibling count | wp/a |
 | B slideshow.ts | sonnet | merged 50635fc; 49 tests. A folder_loaded that arrives while paused is dropped, so the controller must not switch folders while paused | wp/b |
-| C std decode + pipeline | Claude (opus) | running | wp/c |
-| D jxl/psd/svg | sonnet | running | wp/d |
-| E HEIC via WIC | Claude (opus) | running | wp/e |
-| F thumb/cache/meta | - | todo (batch 2) | |
+| C std decode + pipeline | Claude (opus) | merged 6dd8442; correct, but 24 MP end to end is 681 ms (budget 150), see C2 | wp/c |
+| D jxl/psd/svg | sonnet | merged 8d022b8; jxl-oxide applies orientation itself (measured) | wp/d |
+| E HEIC via WIC | Claude (opus) | merged b540b34; WIC applies irot/imir (measured); extension leaks ~1 handle per CopyPixels (not ours) | wp/e |
+| F thumb/cache/meta | sonnet | running | wp/f |
 | G routes/queue/range/cache | - | todo (batch 2) | |
 | H paths/guard | orchestrator | merged 1d4e0c0; 12 tests incl. a real junction escape | wp/h |
-| I viewer/zoom/prefetch | Claude (opus) | running | wp/i |
+| I viewer/zoom/prefetch | Claude (opus) | merged 68186af; 220 web tests; drag feedback and error-card removal applied | wp/i |
 | J overlay/filmstrip/info | sonnet | merged 3cf30d2; 49 tests; overlay z-index 10; info is a PanelHandle on L's Modal | wp/j |
 | K keys/gestures | sonnet | merged 7e671b5 + review fix; 59 tests; edge clicks changed to immediate (brief had them wait 300 ms); drag feedback via --drag-x/--drag-y/--pull | wp/k |
 | L settings/help/slideshow-ui/errors | sonnet | merged 645da34; 43 tests against the real step(); handles: panel {open,close,toggle}, slideshow {imageShown,imageFailed,folderLoaded,noNextFolder}, fade class ps-fade on #stage | wp/l |
+
+### C2: transcode speed (open, measured 2026-11-04)
+Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
+6000x4000 q92: decode 411 ms, resize 86 ms (CatmullRom), encode 170 ms, total 681 ms.
+On loopback, passing the file through costs 102 ms to paint (M0), so for big JPEGs
+transcoding is currently *slower* than passthrough. Options to measure, cheapest first:
+- WIC JPEG decode with DCT scaling (`IWICBitmapSourceTransform`, SIMD libjpeg-class),
+  Windows only;
+- the `jpeg-decoder` crate's DCT `scale()` to the smallest size ≥ target;
+- the `jpeg-encoder` crate (SIMD) instead of image's encoder;
+- meanwhile, prefer passthrough for native JPEG on desktop loopback (a delivery rule
+  change, so it goes through the contract).
+
+Execution mode since 2026-11-04 (user: parallel Claude agents cost too many tokens):
+one sonnet worker at a time, and the orchestrator commits finished work itself.
+Pi/DeepSeek through the OpenCode Go subscription takes priority once
+OPENCODE_KEY_YOYOSET / OPENCODE_KEY_YOYOSET2 are set.
 
 Pi workers (progate/flashgate) are still unavailable (no OPENCODE key in
 the environment), so sonnet sub-agents stand in.
