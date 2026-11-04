@@ -51,7 +51,11 @@ merged, because both call into them. T (test top-up) runs last.
 | WP | owner | status | branch |
 |---|---|---|---|
 | W2-UI controller + boot | sonnet | merged 20bc8ea; 31 tests (web total 300); bundle 21986 B gzip; found the slideshow start-position bug (fixed) | wp/w2-ui |
-| W2-APP Tauri shell (resident mode, token, single instance) | sonnet | running | wp/w2-app |
+| W2-APP Tauri shell (resident mode, token, single instance) | sonnet | merged 9455fa9; exe 16.55 MiB; cold start to thumbnail 1.03-1.23 s, full 24 MP 1.8-2.0 s; resident second open: thumbnail 151-203 ms, full 0.95-1.07 s; idle 97-117 MiB private. requestFullscreen needs a user gesture, so host routes behind the guard | wp/w2-app |
+
+**M1 status:** the Windows viewer works end to end (smoke test driven over CDP).
+The biggest gap users will notice is C2: a full 24 MP image takes ~0.9 s after
+its thumbnail, all of it server decode + resize + encode.
 
 ### C2: transcode speed (open, measured 2026-11-04)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
