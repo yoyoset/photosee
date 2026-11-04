@@ -51,7 +51,7 @@ merged, because both call into them. T (test top-up) runs last.
 | WP | owner | status | branch |
 |---|---|---|---|
 | W2-UI controller + boot | sonnet | merged 20bc8ea; 31 tests (web total 300); bundle 21986 B gzip; found the slideshow start-position bug (fixed) | wp/w2-ui |
-| W2-APP Tauri shell (resident mode, token, single instance) | - | todo, after W2-UI | |
+| W2-APP Tauri shell (resident mode, token, single instance) | sonnet | running | wp/w2-app |
 
 ### C2: transcode speed (open, measured 2026-11-04)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,

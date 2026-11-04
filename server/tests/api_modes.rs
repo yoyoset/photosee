@@ -56,8 +56,8 @@ async fn desktop_session_without_a_start() {
 async fn desktop_session_start_file_and_folder() {
     let (env, photos) = desktop(None, None);
     let file = photos.path().join("a.bmp");
-    let mut state = env.state.clone();
-    state.start = Some(s(&file));
+    let state = env.state.clone();
+    *state.start.write().unwrap() = Some(s(&file));
     let got = get(
         &photosee_server::router(state.clone(), None),
         "/api/v1/session",
@@ -67,7 +67,7 @@ async fn desktop_session_start_file_and_folder() {
         got.json()["start"],
         json!({ "dir": s(photos.path()), "file": s(&file) })
     );
-    state.start = Some(s(photos.path()));
+    *state.start.write().unwrap() = Some(s(photos.path()));
     let got = get(
         &photosee_server::router(state.clone(), None),
         "/api/v1/session",
@@ -77,7 +77,7 @@ async fn desktop_session_start_file_and_folder() {
         got.json()["start"],
         json!({ "dir": s(photos.path()), "file": null })
     );
-    state.start = Some(s(&photos.path().join("gone.bmp")));
+    *state.start.write().unwrap() = Some(s(&photos.path().join("gone.bmp")));
     let got = get(&photosee_server::router(state, None), "/api/v1/session").await;
     assert_eq!(got.status, StatusCode::NOT_FOUND);
 }

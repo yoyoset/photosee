@@ -44,7 +44,12 @@ struct Session {
 }
 
 pub async fn get(State(state): State<AppState>) -> Reply {
-    let start = match state.start.clone() {
+    // A poisoned lock only means a writer panicked; the value is still a path.
+    let start_path = state
+        .start
+        .read()
+        .map_or_else(|e| e.into_inner().clone(), |g| g.clone());
+    let start = match start_path {
         // The only IO here: telling a file from a folder. On a NAS that is
         // a round trip, so it goes through the queue like everything else.
         Some(p) => {

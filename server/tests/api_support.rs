@@ -84,7 +84,7 @@ pub fn state_with(fs: Arc<dyn FsBackend>, policy: Policy, queue: IoQueue) -> (Ap
         settings_path: tmp.path().join("settings.json"),
         token: None,
         allowed_hosts: vec![],
-        start: None,
+        start: Default::default(),
     };
     (state, tmp)
 }

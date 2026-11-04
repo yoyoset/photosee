@@ -91,3 +91,10 @@ paths = [
   "web/src/controller.ts", "web/src/controller-*.ts", "web/src/host.ts", "web/src/main.ts",
   "web/test/controller*.test.ts", "web/test/main*.test.ts",
 ]
+
+# The root manifest, lockfile and deps.md are contract files; W2-APP may
+# touch them only to add the app member and its pinned dependencies.
+[W2-APP]
+paths = [
+  "app/**", "scripts/build-app.ps1", "Cargo.toml", "Cargo.lock", "docs/deps.md",
+]

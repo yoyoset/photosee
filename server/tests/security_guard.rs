@@ -31,7 +31,7 @@ fn state(token: Option<&str>, hosts: &[&str]) -> AppState {
         settings_path: std::env::temp_dir().join("photosee-guard-test.json"),
         token: token.map(str::to_owned),
         allowed_hosts: hosts.iter().map(|h| (*h).to_owned()).collect(),
-        start: None,
+        start: Default::default(),
     }
 }
 

@@ -4,7 +4,7 @@ use crate::{cache::ListingCache, paths::Policy, queue::IoQueue};
 use photosee_core::io::FsBackend;
 use photosee_core::thumbcache::ThumbCache;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -20,6 +20,8 @@ pub struct AppState {
     pub token: Option<String>,
     /// Accepted `Host` header values (DNS-rebinding defence).
     pub allowed_hosts: Vec<String>,
-    /// What `/api/v1/session` reports as the starting point.
-    pub start: Option<String>,
+    /// What `/api/v1/session` reports as the starting point. Mutable for
+    /// resident mode: a second launch sets the new path and reloads the
+    /// already-warm webview, which then boots from it.
+    pub start: Arc<RwLock<Option<String>>>,
 }
