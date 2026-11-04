@@ -28,17 +28,38 @@ pub fn encode(img: &Rgba8, jpeg_quality: u8) -> Result<Encoded> {
             .map_err(encode_err)?;
         "image/png"
     } else {
-        let rgb: Vec<u8> = img
-            .data
-            .chunks_exact(4)
-            .flat_map(|p| [p[0], p[1], p[2]])
-            .collect();
-        JpegEncoder::new_with_quality(&mut bytes, jpeg_quality.clamp(1, 100))
-            .encode(&rgb, w, h, ExtendedColorType::Rgb8)
-            .map_err(encode_err)?;
+        bytes = jpeg(img, jpeg_quality.clamp(1, 100))?;
         "image/jpeg"
     };
     Ok(Encoded { mime, bytes })
+}
+
+/// Opaque RGBA to JPEG. On Windows WIC's encoder goes first (154 -> 29 ms at
+/// 2160x1440, see `pipeline_bench`); anything it refuses falls back to `image`.
+fn jpeg(img: &Rgba8, quality: u8) -> Result<Vec<u8>> {
+    #[cfg(windows)]
+    if crate::decode::std_formats::wic_enabled()
+        && let Ok(bytes) = crate::encode_wic::jpeg(img, quality)
+    {
+        return Ok(bytes);
+    }
+    jpeg_image(img, quality)
+}
+
+/// The `image` crate's JPEG encoder: the path on every other platform and
+/// the fallback on Windows. Public so benchmarks can time it directly.
+pub fn jpeg_image(img: &Rgba8, quality: u8) -> Result<Vec<u8>> {
+    let (w, h) = (img.size.w, img.size.h);
+    let rgb: Vec<u8> = img
+        .data
+        .chunks_exact(4)
+        .flat_map(|p| [p[0], p[1], p[2]])
+        .collect();
+    let mut bytes = Vec::new();
+    JpegEncoder::new_with_quality(&mut bytes, quality)
+        .encode(&rgb, w, h, ExtendedColorType::Rgb8)
+        .map_err(encode_err)?;
+    Ok(bytes)
 }
 
 /// True when any pixel is not fully opaque.

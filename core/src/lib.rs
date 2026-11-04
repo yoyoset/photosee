@@ -6,6 +6,8 @@ pub mod config;
 pub mod decode;
 pub mod delivery;
 pub mod encode;
+#[cfg(windows)]
+pub mod encode_wic;
 pub mod error;
 pub mod format;
 pub mod io;

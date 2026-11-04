@@ -79,7 +79,7 @@ fn is_backend(e: &Error) -> bool {
 /// Benchmarks and tests switch the WIC path off to measure or exercise the
 /// pure-Rust one. Read per call (a map lookup, nothing next to a decode).
 #[cfg(windows)]
-fn wic_enabled() -> bool {
+pub(crate) fn wic_enabled() -> bool {
     std::env::var_os("PHOTOSEE_NO_WIC").is_none()
 }
 

@@ -15,7 +15,7 @@
 //! `image` crate, which handles what WIC refuses (CMYK/gray are refused on
 //! purpose below; arithmetic coding and 12-bit are refused by WIC itself).
 
-mod com;
+pub(crate) mod com;
 
 use crate::color;
 use crate::decode::std_formats::{MAX_PIXELS, check_pixels};

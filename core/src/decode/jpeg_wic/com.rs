@@ -13,7 +13,7 @@ const MAX_ICC: u32 = 4 * 1024 * 1024;
 /// WIC failure -> our error, HRESULT in hex for the "details" line. `Setup`
 /// failures (COM, factory, stream) are not the file's fault: Unsupported.
 /// Everything else is Corrupt, but the caller falls back to `image` anyway.
-pub(super) fn wic<T>(r: windows::core::Result<T>, what: &str) -> Result<T> {
+pub(crate) fn wic<T>(r: windows::core::Result<T>, what: &str) -> Result<T> {
     r.map_err(|e| {
         let code = match what {
             "CoInitializeEx" | "CoCreateInstance" | "CreateStream" | "InitializeFromMemory" => {
@@ -32,12 +32,12 @@ pub(super) fn wic<T>(r: windows::core::Result<T>, what: &str) -> Result<T> {
 
 /// Balances `CoInitializeEx` (see heic_wic.rs: `S_FALSE` also needs the
 /// matching uninit; `RPC_E_CHANGED_MODE` means an STA that is not ours).
-pub(super) struct ComGuard {
+pub(crate) struct ComGuard {
     owned: bool,
 }
 
 impl ComGuard {
-    pub(super) fn init() -> Result<Self> {
+    pub(crate) fn init() -> Result<Self> {
         // SAFETY: no reserved pointer; COINIT_MULTITHREADED is a valid flag.
         // Balanced in Drop only when it succeeded.
         let hr = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };

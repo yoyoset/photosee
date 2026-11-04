@@ -11,7 +11,7 @@ mod util;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
 use photosee_core::decode::std_formats::decode_image;
-use photosee_core::encode::encode;
+use photosee_core::encode::{encode, jpeg_image};
 use photosee_core::pipeline::{Rendered, render};
 use photosee_core::resize::resize;
 use photosee_core::testfs::MemFs;
@@ -24,15 +24,16 @@ use util::*;
 
 const RUNS: usize = 5;
 
-/// Gradient plus deterministic noise: photo-like entropy for the JPEG
+/// Gradient plus deterministic noise (`noise` is a bit mask, 31 = heavy,
+/// 7 = light): photo-like entropy for the JPEG
 /// coder, smooth areas for the resizer.
-fn photo_like(w: u32, h: u32) -> Rgba8 {
+fn photo_like(w: u32, h: u32, noise: u32) -> Rgba8 {
     let mut seed = 0x9E37_79B9u32;
     rgba(w, h, |x, y| {
         seed ^= seed << 13;
         seed ^= seed >> 17;
         seed ^= seed << 5;
-        let n = (seed & 31) as u8;
+        let n = (seed & noise) as u8;
         let gx = (x * 220 / w) as u8;
         let gy = (y * 220 / h) as u8;
         [gx + n, gy + n, (gx / 2 + gy / 2) + n, 255]
@@ -56,8 +57,8 @@ type DecodeFn = fn(&Vec<u8>, Size) -> Rgba8;
 /// decode / resize / encode / render for one source size, for the path in
 /// use (WIC on Windows: the decode is already reduced) and for the `image`
 /// path (full-size decode), which is what every other platform runs.
-fn split(label: &str, w: u32, h: u32) {
-    let src = jpeg(&photo_like(w, h), 92);
+fn split(label: &str, w: u32, h: u32, noise: u32) {
+    let src = jpeg(&photo_like(w, h, noise), 92);
     println!("{label}: {w}x{h} JPEG q92, {} bytes", src.len());
     let box_ = Size::new(2560, 1440);
     let target = photosee_core::resize::fit(Size::new(w, h), box_, false);
@@ -72,7 +73,11 @@ fn split(label: &str, w: u32, h: u32) {
         let mut small = None;
         let res = median_ms(|| small = Some(resize(&img, target).unwrap()));
         let small = small.unwrap();
-        let enc = median_ms(|| drop(encode(&small, 85).unwrap()));
+        let enc = if name == "image " {
+            median_ms(|| drop(jpeg_image(&small, 85).unwrap()))
+        } else {
+            median_ms(|| drop(encode(&small, 85).unwrap()))
+        };
         println!(
             "  {name} -> {}x{} (decoded {}x{}): decode {dec:.1} ms, resize {res:.1} ms,              encode {enc:.1} ms",
             target.w, target.h, img.size.w, img.size.h
@@ -90,13 +95,19 @@ fn split(label: &str, w: u32, h: u32) {
 #[test]
 #[ignore = "benchmark: run in release with --ignored --nocapture"]
 fn bench_24mp_jpeg_to_2560x1440() {
-    split("24MP", 6000, 4000);
+    split("24MP", 6000, 4000, 31);
+}
+
+#[test]
+#[ignore = "benchmark: run in release with --ignored --nocapture"]
+fn bench_24mp_light_noise() {
+    split("24MP light noise", 6000, 4000, 7);
 }
 
 #[test]
 #[ignore = "benchmark: run in release with --ignored --nocapture"]
 fn bench_12mp_jpeg_to_2560x1440() {
-    split("12MP", 4000, 3000);
+    split("12MP", 4000, 3000, 31);
 }
 
 fn fir(img: &Rgba8, to: Size, f: FilterType) -> Vec<u8> {
@@ -132,7 +143,7 @@ fn grating(w: u32, h: u32, period: f64) -> Rgba8 {
 fn bench_resize_filters() {
     let (sw, sh) = (6000, 4000);
     let to = Size::new(2560, 1707);
-    let photo = photo_like(sw, sh);
+    let photo = photo_like(sw, sh, 31);
     // 3 px source period = 0.78 cycles/px after the 0.427x scale, beyond
     // Nyquist: any surviving contrast is aliasing. 24 px stays in band
     // (10 px at the output): surviving contrast there is sharpness.
@@ -158,7 +169,7 @@ fn bench_resize_filters() {
 #[test]
 #[ignore = "benchmark: run in release with --ignored --nocapture"]
 fn bench_wic_decode_by_scale() {
-    let src = jpeg(&photo_like(6000, 4000), 92);
+    let src = jpeg(&photo_like(6000, 4000, 31), 92);
     for (w, h) in [(6000, 4000), (3000, 2000), (1500, 1000), (750, 500)] {
         let ms = median_ms(|| drop(decode(&src, Format::Jpeg, Some(Size::new(w, h))).unwrap()));
         println!("24MP decode with max {w}x{h}: {ms:.1} ms");
