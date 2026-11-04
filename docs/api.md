@@ -31,6 +31,8 @@ Any non-2xx response has this body:
 
 | code | HTTP | meaning |
 |---|---|---|
+| `unsupported` | 400 | malformed request: `w` without `h`, bad JSON body for `PUT /config` |
+| `unsupported` | 416 | `Range` not satisfiable for the file |
 | `not_found` | 404 | path does not exist |
 | `forbidden` | 403 | outside roots, bad token, bad Host |
 | `unsupported` | 415 | format not supported |
@@ -47,7 +49,8 @@ Any non-2xx response has this body:
 
 ### GET /session
 Start-up facts. Golden file: `contracts/session.json`.
-- `start` is the file or folder the app was opened with, or null.
+- `start` is the file or folder the app was opened with, or null. `start.file`
+  is the file's logical path, which the UI matches against `/list` entries.
 - `roots` is empty on desktop.
 
 ### GET /list?p=DIR

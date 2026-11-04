@@ -40,7 +40,7 @@ merged, because both call into them. T (test top-up) runs last.
 | D jxl/psd/svg | sonnet | merged 8d022b8; jxl-oxide applies orientation itself (measured) | wp/d |
 | E HEIC via WIC | Claude (opus) | merged b540b34; WIC applies irot/imir (measured); extension leaks ~1 handle per CopyPixels (not ours) | wp/e |
 | F thumb/cache/meta | sonnet | merged f80e2bd; 30 tests; thumbnail with IFD1 2 ms / 131 KB read, without it 388 ms (C2) | wp/f |
-| G routes/queue/range/cache | sonnet | running | wp/g |
+| G routes/queue/range/cache | sonnet | merged c672e03; 43 tests; /thumb cache hit 5912 req/s (8 conn), /img 3 MB passthrough p50 5.5 ms; IO timeout 5 s includes queue wait | wp/g |
 | H paths/guard | orchestrator | merged 1d4e0c0; 12 tests incl. a real junction escape | wp/h |
 | I viewer/zoom/prefetch | Claude (opus) | merged 68186af; 220 web tests; drag feedback and error-card removal applied | wp/i |
 | J overlay/filmstrip/info | sonnet | merged 3cf30d2; 49 tests; overlay z-index 10; info is a PanelHandle on L's Modal | wp/j |
