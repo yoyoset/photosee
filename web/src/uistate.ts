@@ -88,11 +88,15 @@ type Listener = (s: UiState) => void;
 export class UiPrefs {
   private listeners = new Set<Listener>();
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** What the server already has, so opening the same folder again writes nothing. */
+  private saved: string;
 
   constructor(
     private state: UiState,
     private readonly api: Pick<Api, 'saveUiState'> | null,
-  ) {}
+  ) {
+    this.saved = JSON.stringify(state);
+  }
 
   get(): UiState { return this.state; }
 
@@ -117,9 +121,13 @@ export class UiPrefs {
   async flush(): Promise<void> {
     clearTimeout(this.timer);
     this.timer = undefined;
+    const json = JSON.stringify(this.state);
+    if (json === this.saved) return;
     try {
+      this.saved = json;
       await this.api?.saveUiState(this.state);
     } catch (e) {
+      this.saved = ''; // retry on the next change
       console.warn('ui-state not saved', e);
     }
   }

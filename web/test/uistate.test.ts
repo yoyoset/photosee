@@ -105,6 +105,15 @@ describe('UiPrefs saving', () => {
     expect(save.mock.calls[0]?.[0]).toMatchObject({ version: 1, thumb: 120 });
   });
 
+  it('writes nothing when the state ended up unchanged', async () => {
+    const save = vi.fn<(s: Record<string, unknown>) => Promise<void>>(async () => {});
+    const p = new UiPrefs(defaultUiState(), { saveUiState: save });
+    p.set({ thumb: 200 });
+    p.set({ thumb: 160 }); // back to where it was
+    await vi.advanceTimersByTimeAsync(600);
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('a failed save is logged, not thrown', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const p = new UiPrefs(defaultUiState(), { saveUiState: async () => { throw new Error('read-only'); } });

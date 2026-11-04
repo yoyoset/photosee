@@ -61,6 +61,12 @@ export class Toolbar {
   constructor(h: ToolbarHooks) {
     this.el.className = 'tbar';
     this.el.setAttribute('role', 'toolbar');
+    // A mouse click on a button must not steal the keyboard from the grid:
+    // after "details" the user expects the arrow keys and Enter to keep
+    // working on the files. Tab and Enter on a focused button still work.
+    this.el.addEventListener('mousedown', (e) => {
+      if ((e.target as Element).closest('button')) e.preventDefault();
+    });
     this.tree = button('panel', 'br.tree', h.toggleTree);
     this.back = button('back', 'br.back', h.back);
     this.forward = button('forward', 'br.forward', h.forward);

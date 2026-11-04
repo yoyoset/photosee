@@ -22,7 +22,7 @@ body.mode-browser #browser { display: flex; }
 
 /* toolbar */
 .tbar {
-  display: flex; align-items: center; gap: 4px; padding: 6px 8px; flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; flex: none;
   background: var(--panel); border-bottom: 1px solid var(--line);
 }
 .tb {
@@ -45,7 +45,7 @@ body.mode-browser #browser { display: flex; }
 
 /* address bar */
 .addr {
-  position: relative; display: flex; align-items: center; flex: 1; min-width: 120px; height: 28px;
+  position: relative; display: flex; align-items: center; flex: 1 1 220px; min-width: 120px; height: 28px;
   background: var(--bg); border: 1px solid var(--line); border-radius: 2px; cursor: text;
 }
 .addr:focus-within { border-color: var(--accent); }
