@@ -110,3 +110,15 @@ paths = [
 # ---- M1 Wave 3 ----
 [W3-PKG]
 paths = ["app/tauri.conf.json", "app/icons/**", "app/wix/**", "app/nsis/**", "scripts/package.ps1", "app/src/serve.rs"]
+
+# ---- Browser (user feedback 2026-11-04) ----
+[BR]
+paths = [
+  "web/src/browser*.ts", "web/src/tree*.ts", "web/src/grid*.ts", "web/src/details*.ts",
+  "web/src/uistate*.ts", "web/src/browser.css",
+  "web/src/controller*.ts", "web/src/main.ts", "web/src/keys.ts",
+  "web/src/state.ts", "web/src/i18n.ts", "web/index.html",
+  "web/test/browser*.test.ts", "web/test/tree*.test.ts", "web/test/grid*.test.ts",
+  "web/test/details*.test.ts", "web/test/uistate*.test.ts", "web/test/controller*.test.ts",
+  "web/test/keys.test.ts", "web/test/state.test.ts", "web/test/i18n.test.ts",
+]

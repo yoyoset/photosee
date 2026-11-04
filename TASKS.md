@@ -58,6 +58,17 @@ merged, because both call into them. T (test top-up) runs last.
 The biggest gap users will notice is C2: a full 24 MP image takes ~0.9 s after
 its thumbnail, all of it server decode + resize + encode.
 
+## Browser (user feedback 2026-11-04)
+The user found the app opened straight into the single-image view, with
+nothing to choose a folder and nothing to browse. They asked for
+professional, customisable browsing ("专业一点，不要搞得跟个玩具一样"),
+with both a tree and thumbnails.
+
+| WP | owner | status | branch |
+|---|---|---|---|
+| groundwork: places, /ui-state, pick-folder | orchestrator | merged 52ffbe9 | main |
+| BR tree + grid + details + toolbar + status bar | sonnet | running | wp/br |
+
 ## M1 Wave 3
 | WP | owner | status | branch |
 |---|---|---|---|
