@@ -165,7 +165,7 @@ describe('panels, scrub, fullscreen', () => {
 });
 
 describe('Esc order', () => {
-  it('unwinds panel, zoom, fullscreen, then closes the window', async () => {
+  it('unwinds panel, zoom, fullscreen, then returns to the browser', async () => {
     const r = rig();
     r.ctl.registerEsc(r.host);
     let panelOpen = true;
@@ -186,11 +186,11 @@ describe('Esc order', () => {
     expect(r.host.fs).toBe(true);
     r.ctl.dispatch({ type: 'escape' });
     await flush();
-    expect(r.host.fs).toBe(false);
-    expect(r.store.get().fullscreen).toBe(false);
+    expect([r.host.fs, r.store.get().fullscreen]).toEqual([false, false]);
+    expect(r.store.get().mode).toBe('viewer');
+    r.ctl.dispatch({ type: 'escape' }); // the bottom of the stack: back to the browser, never close
+    expect(r.store.get().mode).toBe('browser');
     expect(r.host.close).not.toHaveBeenCalled();
-    r.ctl.dispatch({ type: 'escape' });
-    expect(r.host.close).toHaveBeenCalledOnce();
   });
 });
 

@@ -15,13 +15,19 @@ export interface FolderLoader {
   /** Banner for transient failures, a toast for the rest. */
   report(err: unknown, dir: string, retry: () => void): void;
   /** List `dir` and show it, starting at `file` (by path) if given.
-   * Null: it failed (reported) or a newer request took over. */
-  openDir(dir: string, file?: string | null, announce?: boolean): Promise<Listing | null>;
+   * Null: it failed (reported) or a newer request took over.
+   * `onError`: the caller shows the failure itself (the address bar does,
+   * inline), so nothing is reported here. */
+  openDir(dir: string, file?: string | null, announce?: boolean, onError?: (e: ApiError) => void): Promise<Listing | null>;
 }
 
 const TRANSIENT = new Set<ApiError['code']>(['timeout', 'io', 'network']);
 
-export function createFolderLoader(getCtx: () => Ctx, getNotices: () => HTMLElement): FolderLoader {
+/** `arrange` puts a fresh listing in the user's sort order before anyone
+ * (the viewer's index, the browser's grid) sees it. */
+export function createFolderLoader(
+  getCtx: () => Ctx, getNotices: () => HTMLElement, arrange: (l: Listing) => Listing = (l) => l,
+): FolderLoader {
   // A slow older answer must not overwrite a newer one.
   let seq = 0;
   let dismissBanner: (() => void) | null = null;
@@ -38,14 +44,18 @@ export function createFolderLoader(getCtx: () => Ctx, getNotices: () => HTMLElem
     }
   }
 
-  async function openDir(dir: string, file?: string | null, announce = false): Promise<Listing | null> {
+  async function openDir(
+    dir: string, file?: string | null, announce = false, onError?: (e: ApiError) => void,
+  ): Promise<Listing | null> {
     const ctx = getCtx();
     const mine = begin();
     let listing: Listing;
     try {
-      listing = await ctx.api.list(dir);
+      listing = arrange(await ctx.api.list(dir));
     } catch (err) {
-      if (mine === seq) report(err, dir, () => void openDir(dir, file, announce));
+      if (mine !== seq) return null;
+      if (onError) onError(err instanceof ApiError ? err : new ApiError('io', String(err)));
+      else report(err, dir, () => void openDir(dir, file, announce));
       return null;
     }
     if (mine !== seq) return null;
@@ -54,7 +64,9 @@ export function createFolderLoader(getCtx: () => Ctx, getNotices: () => HTMLElem
     dismissBanner = dismissEmpty = null;
     const found = file ? listing.images.findIndex((x) => x.path === file) : -1;
     ctx.store.set({ listing, index: Math.max(0, found), zoom: FIT, rotation: 0 });
-    if (listing.images.length === 0) dismissEmpty = showEmptyFolder(getNotices(), ctx.session.platform);
+    // An image-less folder is normal in the browser (subfolders only); the
+    // "no images" notice belongs to the viewer.
+    if (listing.images.length === 0 && ctx.store.get().mode === 'viewer') dismissEmpty = showEmptyFolder(getNotices(), ctx.session.platform);
     else if (announce) showToast(getNotices(), folderName(listing.dir), FOLDER_TOAST_MS);
     return listing;
   }

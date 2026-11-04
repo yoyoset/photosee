@@ -72,12 +72,13 @@ describe('boot: start', () => {
     expect(app.ctx.store.get().listing?.images).toHaveLength(2);
   });
 
-  it('with neither shows the empty stage and lists nothing', async () => {
+  it('with neither starts in the browser on the first place', async () => {
     const s = setup();
     app = await s.run();
     await app.started;
-    expect(s.api.list).not.toHaveBeenCalled();
-    expect(app.ctx.store.get().listing).toBeNull();
+    expect(app.ctx.store.get().mode).toBe('browser');
+    expect(s.api.list).toHaveBeenCalledWith('/photos');
+    expect(app.ctx.store.get().listing?.dir).toBe('/photos');
   });
 
   it('keeps settings from /config in the store', async () => {
@@ -115,7 +116,7 @@ describe('boot: errors', () => {
 
   it('an empty folder shows the notice', async () => {
     const s = setup({
-      start: { dir: '/photos', file: null }, list: async () => ({ ...PHOTOS, images: [] }),
+      start: { dir: '/photos', file: A10 }, list: async () => ({ ...PHOTOS, images: [] }),
     });
     app = await s.run();
     await app.started;
@@ -132,7 +133,7 @@ describe('boot: errors', () => {
 
 describe('boot: fullscreen', () => {
   it('desktop with start_fullscreen goes fullscreen', async () => {
-    const s = setup({ mode: 'desktop' });
+    const s = setup({ mode: 'desktop', start: { dir: '/photos', file: A10 } });
     app = await s.run();
     await flush();
     expect(s.host.fs).toBe(true);
@@ -140,7 +141,7 @@ describe('boot: fullscreen', () => {
   });
 
   it('browser mode shows the hint once instead', async () => {
-    const s = setup({ mode: 'server' });
+    const s = setup({ mode: 'server', start: { dir: '/photos', file: A10 } });
     app = await s.run();
     await flush();
     expect(s.host.fs).toBe(false);
@@ -153,7 +154,7 @@ describe('boot: fullscreen', () => {
   });
 
   it('start_fullscreen off does nothing', async () => {
-    const s = setup({ settings: { start_fullscreen: false } });
+    const s = setup({ settings: { start_fullscreen: false }, start: { dir: '/photos', file: A10 } });
     app = await s.run();
     await flush();
     expect(s.host.fs).toBe(false);
@@ -162,7 +163,7 @@ describe('boot: fullscreen', () => {
 
 describe('boot: wiring', () => {
   it('keys reach the controller', async () => {
-    const s = setup({ start: { dir: '/photos', file: null } });
+    const s = setup({ start: { dir: '/photos', file: PHOTOS.images[0]?.path ?? null } });
     app = await s.run();
     await app.started;
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));

@@ -55,7 +55,7 @@ export function syncFullscreen(ctx: Ctx, host: Host): void {
   if (ctx.store.get().fullscreen !== on) ctx.store.set({ fullscreen: on });
 }
 
-/** zoom -> fullscreen -> window; the order is fixed by EscStack. */
+/** zoom -> fullscreen -> back to the browser; the order is fixed by EscStack. */
 export function registerEscLayers(ctx: Ctx, host: Host): () => void {
   const offs = [
     ctx.esc.register('zoom', () => {
@@ -68,8 +68,11 @@ export function registerEscLayers(ctx: Ctx, host: Host): () => void {
       void toggleFullscreen(ctx, host);
       return true;
     }),
+    // Esc at the bottom of the stack leaves the viewer for the browser. Closing
+    // the window is the title bar's job (and Ctrl+Q), never a stray Esc.
     ctx.esc.register('window', () => {
-      host.close();
+      if (ctx.store.get().mode !== 'viewer') return false;
+      ctx.store.set({ mode: 'browser' });
       return true;
     }),
   ];

@@ -1,7 +1,7 @@
 // Page turns and folder switching. A page turn always resets zoom and display
 // rotation (docs/ux-spec.md): rotation is a look at one image, not a mode.
 
-import type { Listing } from './api';
+import type { ApiError, Listing } from './api';
 import { HINT_TOAST_MS } from './constants';
 import { createFolderLoader } from './controller-folder';
 import type { Ctx } from './ctx';
@@ -15,6 +15,8 @@ export interface NavParts {
   slideshow: SlideshowHandle;
   /** Where toasts, banners and notices go. */
   notices: HTMLElement;
+  /** Sort order applied to every listing as it arrives (the browser's). */
+  arrange?: (l: Listing) => Listing;
 }
 
 export type Turn = 'next' | 'prev' | 'first' | 'last' | number;
@@ -23,7 +25,7 @@ export interface Navigator {
   turn(to: Turn): void;
   /** `fromSlideshow`: the slideshow is waiting for folderLoaded/noNextFolder. */
   changeFolder(d: 'next' | 'prev', fromSlideshow?: boolean): Promise<void>;
-  openDir(dir: string, file?: string | null, announce?: boolean): Promise<Listing | null>;
+  openDir(dir: string, file?: string | null, announce?: boolean, onError?: (e: ApiError) => void): Promise<Listing | null>;
 }
 
 export function turn(ctx: Ctx, notices: HTMLElement, to: Turn): void {
@@ -44,7 +46,7 @@ export function turn(ctx: Ctx, notices: HTMLElement, to: Turn): void {
 }
 
 export function createNavigator(getCtx: () => Ctx, getParts: () => NavParts): Navigator {
-  const loader = createFolderLoader(getCtx, () => getParts().notices);
+  const loader = createFolderLoader(getCtx, () => getParts().notices, (l) => getParts().arrange?.(l) ?? l);
   // The slideshow's request may be superseded by a manual one; the answer
   // still has to reach it or it would wait forever.
   let slideshowWaiting = false;
