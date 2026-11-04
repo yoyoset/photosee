@@ -62,7 +62,21 @@ its thumbnail, all of it server decode + resize + encode.
 | WP | owner | status | branch |
 |---|---|---|---|
 | W3-PKG NSIS installer, file associations, portable zip | sonnet | merged 095249d; installer 3.93 MiB per-user, zip 5.54 MiB; Open-with/Capabilities only (never overwrites defaults); install/open/uninstall smoke test leaves HKCU identical | wp/w3-pkg |
-| W3-REV security + accessibility review | orchestrator | todo, after W3-PKG | |
+| W3-REV security + accessibility review | orchestrator | light pass done (see below); a full review with a screen reader is still open | |
+
+### W3-REV light pass (2026-11-04, checked by reading, not by tools)
+- Every route resolves `p` (and `root` for /nav) through `Policy::resolve`. Static files go
+  through ServeDir behind the same guard.
+- Host routes (fullscreen/close/quit) sit behind the guard. Tauri IPC has no capabilities.
+  The token comes from getrandom. The perf route exists only with PHOTOSEE_PERF_OUT.
+- `innerHTML` appears once: constant SVG icons in overlay.ts. All server text goes through
+  textContent.
+- Every unsafe block (heic_wic, jpeg_wic, encode_wic) has a SAFETY note and was reviewed.
+- SVG: no resources_dir, data: hrefs only, 16 MiB cap.
+- Still open, needs real use:
+  - screen reader pass (NVDA/Narrator) over the overlay, panels and live region;
+  - the two Microsoft Store product IDs on the missing-codec card;
+  - the trackpad inertia tail on real hardware (K).
 
 ### C2: transcode speed (partly done; still open for 24 MP)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
