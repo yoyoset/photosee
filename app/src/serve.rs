@@ -32,8 +32,26 @@ pub fn allowed_hosts(port: u16) -> Vec<String> {
     vec![format!("127.0.0.1:{port}"), format!("localhost:{port}")]
 }
 
-/// Settings and thumbnail cache live under `%LOCALAPPDATA%\PhotoSee`.
+/// A file with this name next to the exe makes the copy portable ("green"):
+/// every byte the app writes stays in `<exe dir>\data`, nothing in the user
+/// profile, so deleting the folder removes all traces.
+pub const PORTABLE_MARKER: &str = "portable";
+
+/// The exe's folder when this is a portable copy.
+pub fn portable_dir() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?;
+    dir.join(PORTABLE_MARKER)
+        .is_file()
+        .then(|| dir.to_path_buf())
+}
+
+/// Settings and thumbnail cache: `<exe dir>\data` for a portable copy,
+/// otherwise `%LOCALAPPDATA%\PhotoSee`.
 pub fn data_dir() -> PathBuf {
+    if let Some(dir) = portable_dir() {
+        return dir.join("data");
+    }
     std::env::var_os("LOCALAPPDATA")
         .map_or_else(std::env::temp_dir, PathBuf::from)
         .join("PhotoSee")

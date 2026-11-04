@@ -53,13 +53,16 @@ $setup = Get-ChildItem (Join-Path $bundle 'nsis') -Filter '*-setup.exe' |
   Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $setup) { Write-Host 'FAILED: no installer produced' -ForegroundColor Red; exit 1 }
 
-# Portable = exactly what the installer lays down next to the exe: photosee.exe + web\.
+# Portable = photosee.exe + web\ + the `portable` marker.
 $stage = Join-Path $bundle 'portable'
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 $dir = Join-Path $stage 'PhotoSee'
 New-Item -ItemType Directory -Force $dir | Out-Null
 Copy-Item (Join-Path $root 'target\release\photosee.exe') $dir
 Copy-Item -Recurse (Join-Path $root 'web\dist') (Join-Path $dir 'web')
+# The marker makes it "green": settings, thumbnails and the WebView2 profile
+# go to PhotoSee\data\, never to %LOCALAPPDATA% (app/src/serve.rs).
+Set-Content -Encoding ascii -Path (Join-Path $dir 'portable') -Value 'PhotoSee portable: data lives in .\data'
 $zip = Join-Path $bundle 'PhotoSee-portable.zip'
 if (Test-Path $zip) { Remove-Item -Force $zip }
 # bsdtar (shipped with Windows) writes forward-slash entry names;

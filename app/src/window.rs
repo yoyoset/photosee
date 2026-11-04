@@ -45,8 +45,13 @@ impl WindowCtl for TauriWin {
 /// Black before the first paint: WebView2's default is white, which flashes
 /// while the page loads.
 pub fn create(app: &tauri::App, url: WebviewUrl, script: &str) -> tauri::Result<()> {
-    WebviewWindowBuilder::new(app, MAIN, url)
-        .title("PhotoSee")
+    let mut b = WebviewWindowBuilder::new(app, MAIN, url);
+    // WebView2 keeps its profile (cache, cookies) under the user's AppData
+    // by default; a portable copy keeps it in its own folder instead.
+    if crate::serve::portable_dir().is_some() {
+        b = b.data_directory(crate::serve::data_dir().join("webview"));
+    }
+    b.title("PhotoSee")
         .inner_size(1280.0, 800.0)
         .center()
         .background_color(Color(0, 0, 0, 255))
