@@ -87,7 +87,7 @@ export class TreeModel {
       ['network', 'br.section.network', this.network],
     ];
     for (const [id, label, nodes] of sections) {
-      if (nodes.length === 0) continue;
+      if (nodes.length === 0 && id !== 'recent') continue; // Recent always shows: its box has a fixed size
       out.push({ kind: 'header', id, label: t(label) });
       for (const n of nodes) walk(n, 0, null, out);
     }

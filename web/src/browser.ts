@@ -10,6 +10,7 @@ import './browser.css';
 import type { Listing } from './api';
 import { ContentHost, type ContentDeps } from './browser-content';
 import { itemsOf, type BrowserItem } from './browser-items';
+import { buildSkeleton } from './browser-layout';
 import { Toolbar } from './browser-toolbar';
 import { BrowserNav } from './browser-nav';
 import { bindBrowserKeys } from './browser-keys';
@@ -20,12 +21,12 @@ import type { Ctx } from './ctx';
 import { showToast } from './errors';
 import { HINT_TOAST_MS } from './constants';
 import type { Host } from './host';
-import { t } from './i18n';
 import { TreeModel } from './tree-model';
 import { TreeView } from './tree';
 import type { UiPrefs, UiState } from './uistate';
 import { FIT } from './zoom';
-import { clampThumb } from './grid-geometry';
+import { THUMB_MAX_PX } from './browser-consts';
+import { sliderAction } from './grid-geometry';
 import { itemEntries, showMenu } from './browser-menu';
 import type { Navigator } from './controller-nav';
 
@@ -58,11 +59,11 @@ class BrowserImpl implements Browser {
   readonly tree: TreeView;
   readonly toolbar: Toolbar;
   private readonly model: TreeModel;
-  private readonly tree$ = document.createElement('div');
-  private readonly split = document.createElement('div');
-  private readonly empty = document.createElement('div');
-  private readonly statusL = document.createElement('span');
-  private readonly statusR = document.createElement('span');
+  private readonly tree$: HTMLElement;
+  private readonly split: HTMLElement;
+  private readonly empty: HTMLElement;
+  private readonly statusL: HTMLElement;
+  private readonly statusR: HTMLElement;
   private readonly offs: (() => void)[] = [];
   private listing: Listing | null = null;
   private active = false;
@@ -80,14 +81,18 @@ class BrowserImpl implements Browser {
         ? { recent: prefs.get().recent.filter((x) => x !== n.path) }
         : { network: prefs.get().network.filter((x) => x !== n.path) }),
       clearRecent: () => prefs.set({ recent: [] }),
+      recentPaused: () => prefs.get().recentPaused,
+      setRecentPaused: (recentPaused) => prefs.set({ recentPaused }),
     });
     this.content = new ContentHost(this.contentActions());
     this.toolbar = this.buildToolbar();
-    this.layout();
+    const sk = buildSkeleton(d.root, this.toolbar.el, this.tree.el, this.content.el);
+    ({ tree$: this.tree$, split: this.split, empty: this.empty, statusL: this.statusL, statusR: this.statusR } = sk);
     this.offs.push(
       ctx.store.subscribe((s, p) => { if (this.active && s.listing !== p.listing) this.showListing(); }),
       prefs.subscribe((p) => this.onPrefs(p)),
-      mountSplitter(this.split, () => prefs.get().tree.width, (w) => this.setTreeWidth(w)),
+      mountSplitter(this.split, () => this.treeWidth(), (w) => this.setTreeWidth(w), () => window.innerWidth),
+      onWindowResize(() => this.applyLayoutPrefs()),
     );
     this.nav.onChanged = () => this.syncToolbar();
     this.offs.push(bindBrowserKeys(d.root.ownerDocument.defaultView ?? window, {
@@ -104,30 +109,6 @@ class BrowserImpl implements Browser {
     this.tree.render(); // the places show even when no folder could be opened
   }
 
-  private layout(): void {
-    const { root } = this.d;
-    root.classList.add('br');
-    root.hidden = true;
-    this.tree$.className = 'br-tree';
-    this.tree$.append(this.tree.el);
-    this.split.className = 'br-split';
-    this.empty.className = 'br-empty';
-    this.empty.textContent = t('br.empty');
-    this.empty.hidden = true;
-    const main = document.createElement('div');
-    main.className = 'br-main';
-    const pane = document.createElement('div');
-    pane.className = 'br-pane';
-    pane.append(this.content.el, this.empty);
-    main.append(this.tree$, this.split, pane);
-    const status = document.createElement('div');
-    status.className = 'br-status';
-    this.statusL.className = 'st-l';
-    this.statusR.className = 'st-r';
-    status.append(this.statusL, this.statusR);
-    root.replaceChildren(this.toolbar.el, main, status);
-  }
-
   private contentActions(): ContentDeps {
     const { ctx, prefs } = this.d;
     return {
@@ -137,7 +118,7 @@ class BrowserImpl implements Browser {
       onMenu: (it, x, y) => showMenu(itemEntries(it, () => this.openItem(it),
         () => { this.openItem(it); this.d.ctx.dispatch({ type: 'toggle_slideshow' }); }), x, y),
       onDims: () => this.syncStatus(),
-      zoomThumb: (delta) => this.setThumb(prefs.get().thumb + delta, true),
+      zoomThumb: (delta) => this.setThumb(Math.min(THUMB_MAX_PX, prefs.get().thumb + delta), true),
       sortBy: (key) => {
         const s = prefs.get().sort;
         prefs.set({ sort: { ...s, key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' } });
@@ -244,7 +225,7 @@ class BrowserImpl implements Browser {
     this.prev = p;
     if (p.sort.key !== prev.sort.key || p.sort.dir !== prev.sort.dir) this.resort(p);
     this.content.applyPrefs(p, prev);
-    if (p.recent !== prev.recent || p.network !== prev.network) {
+    if (p.recent !== prev.recent || p.network !== prev.network || p.recentPaused !== prev.recentPaused) {
       this.syncLists();
       this.tree.render();
     }
@@ -260,18 +241,25 @@ class BrowserImpl implements Browser {
 
   private applyLayoutPrefs(): void {
     const { tree } = this.d.prefs.get();
-    this.d.root.style.setProperty('--tree-w', `${tree.width}px`);
+    this.d.root.style.setProperty('--tree-w', `${this.treeWidth()}px`);
     this.tree$.hidden = this.split.hidden = !tree.visible;
   }
 
+  /** The stored width, limited to half of the window right now. The stored
+   * value is kept as is, so a window that grows again gets the wide tree back. */
+  private treeWidth(): number {
+    return clampTree(this.d.prefs.get().tree.width, window.innerWidth);
+  }
+
   private setTreeWidth(px: number): void {
-    this.d.prefs.set({ tree: { ...this.d.prefs.get().tree, width: clampTree(px) } });
+    this.d.prefs.set({ tree: { ...this.d.prefs.get().tree, width: clampTree(px, window.innerWidth) } });
   }
 
   private setThumb(px: number, commit: boolean): void {
-    const size = clampThumb(px);
-    this.d.prefs.set({ thumb: size });
-    this.content.setThumb(size, commit);
+    const { prefs } = this.d;
+    const a = sliderAction(px, prefs.get().view);
+    prefs.set({ ...(a.view ? { view: a.view } : {}), ...(a.thumb !== undefined ? { thumb: a.thumb } : {}) });
+    if (a.thumb !== undefined) this.content.setThumb(a.thumb, commit);
   }
 
   private syncToolbar(): void {
@@ -292,6 +280,11 @@ class BrowserImpl implements Browser {
     this.d.root.replaceChildren();
     this.d.root.classList.remove('br');
   }
+}
+
+function onWindowResize(f: () => void): () => void {
+  window.addEventListener('resize', f);
+  return () => window.removeEventListener('resize', f);
 }
 
 export function mountBrowser(deps: BrowserDeps): Browser {

@@ -3,11 +3,25 @@
 // never hard-code them elsewhere.
 
 export const TREE_MIN_PX = 160;
-export const TREE_MAX_PX = 480;
+/** The tree may take at most this share of the window (computed at drag time
+ * and on resize, so a stored width never overflows a smaller window). */
+export const TREE_MAX_FRACTION = 0.5;
+/** Only bounds a corrupt ui-state file; the real limit is the window. */
+export const TREE_STORED_MAX_PX = 4096;
+/** Recent shows this many rows and scrolls beyond that, so the sections
+ * below it never move as the list grows. TREE_ROW_PX matches `.tr-row`. */
+export const RECENT_VISIBLE_ROWS = 5;
+export const TREE_ROW_PX = 24;
 export const TREE_DEFAULT_PX = 220;
 
 export const THUMB_MIN_PX = 64;
-export const THUMB_MAX_PX = 320;
+export const THUMB_MAX_PX = 640;
+/** One extra slider notch past the max means "single image" view. */
+export const SINGLE_NOTCH_PX = 8;
+/** Cells needing more device px than this ask for a resized image instead of /thumb. */
+export const THUMB_BOX_THRESHOLD_PX = 256;
+/** Requested box sizes for big cells: coarse steps, so resizing hits the cache. */
+export const BOX_STEP_PX = 128;
 export const THUMB_DEFAULT_PX = 160;
 /** Ctrl+wheel: one notch changes the size by this much. */
 export const THUMB_WHEEL_STEP_PX = 16;

@@ -14,6 +14,16 @@ export interface Layout {
 
 export interface Range { start: number; end: number }
 
+export interface SliderAction { view?: 'grid' | 'single'; thumb?: number }
+
+/** What the size slider means at `px`: the notch past the maximum is the
+ * single-image view; anything below it is a thumbnail size, and leaves single
+ * view for the grid when that is where it was. */
+export function sliderAction(px: number, view: 'grid' | 'details' | 'single'): SliderAction {
+  if (px > THUMB_MAX_PX) return { view: 'single' };
+  return view === 'single' ? { view: 'grid', thumb: clampThumb(px) } : { thumb: clampThumb(px) };
+}
+
 export type MoveKey = 'left' | 'right' | 'up' | 'down' | 'home' | 'end' | 'pageup' | 'pagedown';
 
 export const clampThumb = (px: number): number => Math.min(THUMB_MAX_PX, Math.max(THUMB_MIN_PX, Math.round(px)));

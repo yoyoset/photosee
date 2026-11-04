@@ -1,6 +1,7 @@
 // The folder tree pane. TreeModel owns the data and the lazy loading; this
 // file draws it (a flat list of rows, indent by depth) and routes input.
 
+import { RECENT_VISIBLE_ROWS, TREE_ROW_PX } from './browser-consts';
 import { icon } from './browser-icons';
 import { t } from './i18n';
 import { treeKey, type Row, type TreeKey, type TreeModel, type TreeNode } from './tree-model';
@@ -12,6 +13,9 @@ export interface TreeHooks {
   remove(node: TreeNode): void;
   /** Empty the whole recent list (button on its header). */
   clearRecent(): void;
+  /** The Pause checkbox on the Recent header. */
+  recentPaused(): boolean;
+  setRecentPaused(on: boolean): void;
 }
 
 const KEYS: Record<string, TreeKey> = {
@@ -53,17 +57,61 @@ export class TreeView {
 
   render(): void {
     const cur = this.model.nodeFor(this.current);
-    const rows = this.model.rows();
-    this.el.replaceChildren(...rows.map((r) => (r.kind === 'header' ? this.header(r) : this.row(r, cur))));
+    const keep = this.el.querySelector('.tr-recent')?.scrollTop ?? 0;
+    const out: HTMLElement[] = [];
+    let box: HTMLElement | null = null;
+    for (const r of this.model.rows()) {
+      if (r.kind === 'header') {
+        out.push(this.header(r));
+        box = r.id === 'recent' ? this.recentBox() : null;
+        if (box) out.push(box);
+      } else if (box && r.node.section === 'recent') {
+        box.append(this.row(r, cur));
+      } else {
+        out.push(this.row(r, cur));
+      }
+    }
+    this.el.replaceChildren(...out);
+    const recent = this.el.querySelector('.tr-recent');
+    if (recent?.childElementCount === 0) {
+      recent.append(Object.assign(document.createElement('div'), { className: 'tr-none', textContent: t('br.recent_empty') }));
+    }
+    if (recent) recent.scrollTop = keep;
+  }
+
+  /** Recent has a fixed height of five rows and scrolls inside, so a growing
+   * list never pushes Places and Network down ("jumps" the user complained about). */
+  private recentBox(): HTMLElement {
+    const box = document.createElement('div');
+    box.className = 'tr-recent';
+    box.setAttribute('role', 'group');
+    box.style.height = `${RECENT_VISIBLE_ROWS * TREE_ROW_PX}px`;
+    box.style.overflowY = 'auto';
+    return box;
   }
 
   private header(r: Extract<Row, { kind: 'header' }>): HTMLElement {
     const h = document.createElement('div');
     h.className = 'tr-head';
-    h.textContent = r.label;
+    const title = document.createElement('span');
+    title.className = 'tr-title';
+    title.textContent = r.label;
+    h.append(title);
     h.setAttribute('role', 'presentation');
-    if (r.id === 'recent') h.append(this.clearButton());
+    if (r.id === 'recent') h.append(this.pauseBox(), this.clearButton());
     return h;
+  }
+
+  private pauseBox(): HTMLElement {
+    const label = document.createElement('label');
+    label.className = 'tr-pause';
+    label.title = t('br.recent_pause_tip');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = this.hooks.recentPaused();
+    box.addEventListener('change', () => this.hooks.setRecentPaused(box.checked));
+    label.append(box, t('br.recent_pause'));
+    return label;
   }
 
   private clearButton(): HTMLElement {

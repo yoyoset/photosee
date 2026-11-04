@@ -99,6 +99,7 @@ describe('browser: recent list', () => {
     clear?.click();
     expect(app.prefs.get().recent).toEqual([]);
     await flush();
-    expect(document.querySelector('.tr-clear')).toBeNull(); // the empty section is gone
+    expect(document.querySelectorAll('.tr-recent .tr-row')).toHaveLength(0);
+    expect(document.querySelector('.tr-recent .tr-none')).not.toBeNull(); // the box stays, same size
   });
 });

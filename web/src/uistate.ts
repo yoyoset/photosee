@@ -6,12 +6,12 @@
 import type { Api } from './api';
 import {
   LIST_MAX, RECENT_MAX, SAVE_DEBOUNCE_MS, THUMB_DEFAULT_PX, THUMB_MAX_PX, THUMB_MIN_PX,
-  TREE_DEFAULT_PX, TREE_MAX_PX, TREE_MIN_PX,
+  TREE_DEFAULT_PX, TREE_MIN_PX, TREE_STORED_MAX_PX,
 } from './browser-consts';
 import { samePath } from './browser-path';
 import { SORT_KEYS, type SortDir, type SortKey } from './browser-sort';
 
-export type ViewMode = 'grid' | 'details';
+export type ViewMode = 'grid' | 'details' | 'single';
 
 export interface UiState {
   version: 1;
@@ -23,6 +23,8 @@ export interface UiState {
   recent: string[];
   network: string[];
   last: string | null;
+  /** Stop adding opened folders to Recent (existing entries stay). */
+  recentPaused: boolean;
   [unknown: string]: unknown;
 }
 
@@ -37,7 +39,7 @@ export function defaultUiState(): UiState {
   return {
     version: 1, tree: { visible: true, width: TREE_DEFAULT_PX }, view: 'grid',
     sort: { key: 'name', dir: 'asc' }, thumb: THUMB_DEFAULT_PX, names: true,
-    recent: [], network: [], last: null,
+    recent: [], network: [], last: null, recentPaused: false,
   };
 }
 
@@ -49,8 +51,8 @@ export function parseUiState(raw: unknown): UiState {
   return {
     ...raw,
     version: 1,
-    tree: { ...tree, visible: tree['visible'] !== false, width: clampInt(tree['width'], TREE_MIN_PX, TREE_MAX_PX, TREE_DEFAULT_PX) },
-    view: raw['view'] === 'details' ? 'details' : 'grid',
+    tree: { ...tree, visible: tree['visible'] !== false, width: clampInt(tree['width'], TREE_MIN_PX, TREE_STORED_MAX_PX, TREE_DEFAULT_PX) },
+    view: raw['view'] === 'details' || raw['view'] === 'single' ? raw['view'] : 'grid',
     sort: {
       ...sort,
       key: SORT_KEYS.find((k) => k === sort['key']) ?? 'name',
@@ -61,6 +63,7 @@ export function parseUiState(raw: unknown): UiState {
     recent: strings(raw['recent'], RECENT_MAX),
     network: strings(raw['network'], LIST_MAX),
     last: typeof last === 'string' && last !== '' ? last : null,
+    recentPaused: raw['recentPaused'] === true,
   };
 }
 

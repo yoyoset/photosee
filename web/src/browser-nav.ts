@@ -86,7 +86,8 @@ export class BrowserNav {
   private remember(dir: string, typed: boolean): void {
     const p = this.prefs.get();
     const places = this.places();
-    const patch: Parameters<UiPrefs['set']>[0] = { recent: pushRecent(p.recent, dir), last: dir };
+    const patch: Parameters<UiPrefs['set']>[0] = { last: dir };
+    if (!p.recentPaused) patch.recent = pushRecent(p.recent, dir);
     if (typed && isUnc(dir) && !places.some((x) => isUnder(x, dir))) patch.network = [...p.network, dir];
     this.prefs.set(patch);
     this.ctx.store.set({ root: chooseRoot(dir, places) });

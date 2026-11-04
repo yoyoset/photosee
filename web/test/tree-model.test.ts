@@ -33,9 +33,9 @@ describe('tree sections', () => {
     setLang('en');
   });
 
-  it('orders recent, places, network and hides empty sections', () => {
+  it('orders recent, places, network; only Recent shows when empty (its box has a fixed size)', () => {
     const m = new TreeModel(places, fake({}).list);
-    expect(m.rows().filter((r) => r.kind === 'header').map((r) => r.kind === 'header' && r.label)).toEqual(['Places']);
+    expect(m.rows().filter((r) => r.kind === 'header').map((r) => r.kind === 'header' && r.label)).toEqual(['Recent', 'Places']);
     m.setRecent(['D:\\a', 'D:\\b']);
     m.setNetwork(['\\\\nas\\x']);
     const labels = m.rows().map((r) => (r.kind === 'header' ? `# ${r.label}` : r.node.label));

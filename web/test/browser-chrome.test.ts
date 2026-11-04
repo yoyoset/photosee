@@ -232,7 +232,8 @@ describe('toolbar: size and layout', () => {
     expect(s.api.saveUiState.mock.calls[0]?.[0]).toMatchObject({ version: 1, thumb: 176 });
   });
 
-  it('the splitter resizes the tree within 160..480 px by keyboard', async () => {
+  it('the splitter resizes the tree between 160 px and half of the window by keyboard', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 900 });
     const s = setup();
     app = await s.run();
     await app.started;
@@ -240,7 +241,7 @@ describe('toolbar: size and layout', () => {
     press(split, 'ArrowRight');
     expect(app.prefs.get().tree.width).toBe(236);
     for (let i = 0; i < 30; i++) press(split, 'ArrowRight');
-    expect(app.prefs.get().tree.width).toBe(480);
+    expect(app.prefs.get().tree.width).toBe(450);
     for (let i = 0; i < 40; i++) press(split, 'ArrowLeft');
     expect(app.prefs.get().tree.width).toBe(160);
     expect((document.querySelector('#browser') as HTMLElement).style.getPropertyValue('--tree-w')).toBe('160px');

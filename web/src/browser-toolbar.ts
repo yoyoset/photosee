@@ -3,7 +3,7 @@
 // the controls from the prefs, so the persisted layout is the single truth.
 
 import { AddressBar, type AddressHooks } from './browser-address';
-import { THUMB_MAX_PX, THUMB_MIN_PX } from './browser-consts';
+import { SINGLE_NOTCH_PX, THUMB_MAX_PX, THUMB_MIN_PX } from './browser-consts';
 import { icon, type IconName } from './browser-icons';
 import { SORT_KEYS, type SortKey } from './browser-sort';
 import { t, type Key } from './i18n';
@@ -57,6 +57,7 @@ export class Toolbar {
   private readonly sortDir: HTMLButtonElement;
   private readonly thumb = document.createElement('input');
   private readonly names: HTMLButtonElement;
+  private readonly tick = document.createElement('span');
 
   constructor(h: ToolbarHooks) {
     this.el.className = 'tbar';
@@ -75,15 +76,19 @@ export class Toolbar {
     this.views = {
       grid: button('grid', 'br.view.grid', () => h.setView('grid')),
       details: button('list', 'br.view.details', () => h.setView('details')),
+      single: button('single', 'br.view.single', () => h.setView('single')),
     };
     this.sortDir = button('asc', 'br.sort.asc', h.toggleSortDir);
     this.names = button('names', 'br.names', h.toggleNames);
     this.buildSort(h);
     this.buildSlider(h);
+    this.tick.className = 'tb-tick';
+    this.tick.textContent = t('br.view.single');
     const left = [this.tree, ...(h.pick ? [button('folder', 'br.pick', h.pick, t('br.pick'))] : [])];
     this.el.append(
       ...left, sep(), this.back, this.forward, this.up, this.address.el, sep(),
-      this.views.grid, this.views.details, sep(), this.sortKey, this.sortDir, sep(), this.thumb, this.names,
+      this.views.grid, this.views.details, this.views.single, sep(), this.sortKey, this.sortDir, sep(),
+      this.thumb, this.tick, this.names,
     );
   }
 
@@ -100,7 +105,8 @@ export class Toolbar {
     s.type = 'range';
     s.className = 'tb-range';
     s.min = String(THUMB_MIN_PX);
-    s.max = String(THUMB_MAX_PX);
+    // One notch past the biggest thumbnail is the single-image view.
+    s.max = String(THUMB_MAX_PX + SINGLE_NOTCH_PX);
     s.step = '8';
     s.title = t('br.thumb_size');
     s.setAttribute('aria-label', t('br.thumb_size'));
@@ -113,15 +119,17 @@ export class Toolbar {
     this.back.disabled = !nav.canBack;
     this.forward.disabled = !nav.canForward;
     this.up.disabled = !nav.canUp;
-    for (const v of ['grid', 'details'] as const) this.views[v].setAttribute('aria-pressed', String(p.view === v));
+    for (const v of ['grid', 'details', 'single'] as const) this.views[v].setAttribute('aria-pressed', String(p.view === v));
     this.sortKey.value = p.sort.key;
     this.sortDir.replaceChildren(icon(p.sort.dir === 'asc' ? 'asc' : 'desc'));
     const dirLabel = t(p.sort.dir === 'asc' ? 'br.sort.asc' : 'br.sort.desc');
     this.sortDir.title = dirLabel;
     this.sortDir.setAttribute('aria-label', dirLabel);
-    this.thumb.value = String(p.thumb);
+    this.thumb.value = String(p.view === 'single' ? THUMB_MAX_PX + SINGLE_NOTCH_PX : p.thumb);
+    this.tick.classList.toggle('on', p.view === 'single');
     this.names.setAttribute('aria-pressed', String(p.names));
-    // Sizes and names only mean something for thumbnails.
-    this.thumb.disabled = this.names.disabled = p.view !== 'grid';
+    // Names only mean something for thumbnails; the slider also leads out of single view.
+    this.names.disabled = p.view !== 'grid';
+    this.thumb.disabled = p.view === 'details';
   }
 }

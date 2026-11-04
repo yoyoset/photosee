@@ -172,3 +172,14 @@ button.dh:hover { background: var(--hover); color: var(--txt); }
 .br-menu { position: fixed; z-index: 60; min-width: 180px; padding: 4px 0; background: #1e1e1e; border: 1px solid #2a2a2a; box-shadow: 0 4px 16px rgb(0 0 0 / 0.5); }
 .br-menu-item { display: block; width: 100%; padding: 6px 14px; text-align: left; font: 13px/1.4 var(--font); color: #e6e6e6; background: none; border: 0; cursor: default; }
 .br-menu-item:hover, .br-menu-item:focus-visible { background: #25364d; color: #fff; outline: none; }
+
+/* recent box: fixed height (set in tree.ts), scrolls inside */
+.tr-recent { scrollbar-width: thin; scrollbar-color: #3c3c3c transparent; }
+.tr-recent::-webkit-scrollbar { width: 6px; }
+.tr-recent::-webkit-scrollbar-thumb { background: #3c3c3c; border-radius: 3px; }
+.tr-none { padding: 0 10px; line-height: 24px; color: var(--dim); }
+.tr-title { flex: 1; }
+.tr-pause { display: inline-flex; align-items: center; gap: 4px; margin-right: 6px; letter-spacing: 0; cursor: default; }
+.tr-pause input { margin: 0; accent-color: var(--accent); }
+.tb-tick { flex: none; margin-left: -2px; font-size: 11px; color: var(--dim); }
+.tb-tick.on { color: var(--txt); }

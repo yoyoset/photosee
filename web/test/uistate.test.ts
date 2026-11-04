@@ -32,17 +32,17 @@ describe('parseUiState', () => {
 
   it('clamps numbers and rejects wrong types field by field', () => {
     const s = parseUiState({
-      version: 1, tree: { width: 9999 }, view: 'cube', sort: { key: 'colour', dir: 'up' },
+      version: 1, tree: { width: 99999 }, view: 'cube', sort: { key: 'colour', dir: 'up' },
       thumb: 'big', names: 'yes', recent: ['/ok', 5, '', null], last: 4,
     });
-    expect(s.tree.width).toBe(480);
+    expect(s.tree.width).toBe(4096); // only a sanity cap; the window limits it at runtime
     expect(s.view).toBe('grid');
     expect(s.sort).toEqual({ key: 'name', dir: 'asc' });
     expect(s.thumb).toBe(160);
     expect(s.names).toBe(true);
     expect(s.recent).toEqual(['/ok']);
     expect(s.last).toBeNull();
-    expect(parseUiState({ version: 1, tree: { width: 5 }, thumb: 5000 })).toMatchObject({ tree: { width: 160 }, thumb: 320 });
+    expect(parseUiState({ version: 1, tree: { width: 5 }, thumb: 5000 })).toMatchObject({ tree: { width: 160 }, thumb: 640 });
   });
 
 });

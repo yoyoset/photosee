@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cellPos, clampThumb, gridLayout, listLayout, moveIndex, rowCount, scrollToReveal, thumbEdge,
+  cellPos, clampThumb, gridLayout, listLayout, moveIndex, rowCount, scrollToReveal, sliderAction, thumbEdge,
   totalHeight, visibleRange,
 } from '../src/grid-geometry';
 
@@ -31,8 +31,8 @@ describe('layout', () => {
     expect(l).toMatchObject({ cols: 1, cellW: 640, cellH: 24 });
   });
 
-  it('clamps the thumbnail size to 64..320', () => {
-    expect([clampThumb(10), clampThumb(500), clampThumb(160.4)]).toEqual([64, 320, 160]);
+  it('clamps the thumbnail size to 64..640', () => {
+    expect([clampThumb(10), clampThumb(900), clampThumb(500), clampThumb(160.4)]).toEqual([64, 640, 500, 160]);
   });
 });
 
@@ -129,5 +129,19 @@ describe('scroll and thumbnails', () => {
     expect(thumbEdge(100, 0.5)).toBe(128); // dpr below 1 never asks for less than CSS px
     // Nearby slider positions share a step, so the server cache is hit.
     expect(thumbEdge(170, 1)).toBe(thumbEdge(190, 1));
+  });
+});
+
+describe('size slider', () => {
+  it('one notch past the maximum is the single-image view', () => {
+    expect(sliderAction(648, 'grid')).toEqual({ view: 'single' });
+    expect(sliderAction(641, 'details')).toEqual({ view: 'single' });
+    expect(sliderAction(640, 'grid')).toEqual({ thumb: 640 });
+  });
+
+  it('dragging back below the notch leaves single view for the grid', () => {
+    expect(sliderAction(400, 'single')).toEqual({ view: 'grid', thumb: 400 });
+    expect(sliderAction(10, 'single')).toEqual({ view: 'grid', thumb: 64 });
+    expect(sliderAction(200, 'grid')).toEqual({ thumb: 200 });
   });
 });

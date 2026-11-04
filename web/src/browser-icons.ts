@@ -11,6 +11,7 @@ const PATHS = {
   up: 'M8 13V3.5M4 7.5l4-4 4 4',
   grid: 'M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z',
   list: 'M2 4h12M2 8h12M2 12h12',
+  single: 'M2 2.5h12v8.5H2zM2 13.5h2.5M6.8 13.5h2.4M11.5 13.5H14',
   chevron: 'M6 3.5l4.5 4.5L6 12.5',
   panel: 'M2 3h12v10H2zM6 3v10',
   close: 'M4 4l8 8M12 4l-8 8',
