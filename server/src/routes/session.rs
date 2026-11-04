@@ -4,6 +4,7 @@ use super::http::{Reply, queued, require_dir};
 use crate::AppState;
 use crate::paths::Policy;
 use crate::queue::Priority;
+use crate::state::Place;
 use axum::Json;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -23,12 +24,6 @@ const PLATFORM: &str = if cfg!(target_os = "windows") {
 };
 
 #[derive(Serialize)]
-struct Root {
-    name: String,
-    path: String,
-}
-
-#[derive(Serialize)]
 struct Start {
     dir: String,
     file: Option<String>,
@@ -40,7 +35,8 @@ struct Session {
     mode: &'static str,
     platform: &'static str,
     start: Option<Start>,
-    roots: Vec<Root>,
+    /// Top-level places for the browser (docs/api.md §session).
+    roots: Vec<Place>,
 }
 
 pub async fn get(State(state): State<AppState>) -> Reply {
@@ -59,14 +55,15 @@ pub async fn get(State(state): State<AppState>) -> Reply {
         None => None,
     };
     let (mode, roots) = match &*state.policy {
-        Policy::AnyLocal => ("desktop", Vec::new()),
+        Policy::AnyLocal => ("desktop", state.places.clone()),
         Policy::Roots(roots) => (
             "server",
             roots
                 .iter()
-                .map(|r| Root {
+                .map(|r| Place {
                     name: r.name.clone(),
                     path: format!("/{}", r.name),
+                    kind: "root",
                 })
                 .collect(),
         ),

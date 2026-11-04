@@ -40,6 +40,16 @@ impl WindowCtl for TauriWin {
     fn quit(&self) {
         self.0.exit(0);
     }
+
+    fn pick_folder(&self) -> Option<String> {
+        use tauri_plugin_dialog::DialogExt;
+        let mut dlg = self.0.dialog().file();
+        if let Some(w) = self.win() {
+            dlg = dlg.set_parent(&w);
+        }
+        let picked = dlg.blocking_pick_folder()?;
+        picked.into_path().ok()?.to_str().map(str::to_owned)
+    }
 }
 
 /// Black before the first paint: WebView2's default is white, which flashes

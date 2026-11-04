@@ -6,6 +6,17 @@ use photosee_core::thumbcache::ThumbCache;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
+/// A top-level place the browser offers: a Docker root, a drive, or a
+/// known folder such as Pictures. Supplied by whoever builds the state (the
+/// desktop shell knows drives; the server only knows its roots).
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct Place {
+    pub name: String,
+    pub path: String,
+    /// `root` (Docker), `folder` (known folder), `drive`, `network`.
+    pub kind: &'static str,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub fs: Arc<dyn FsBackend>,
@@ -24,4 +35,7 @@ pub struct AppState {
     /// resident mode: a second launch sets the new path and reloads the
     /// already-warm webview, which then boots from it.
     pub start: Arc<RwLock<Option<String>>>,
+    /// Desktop: drives and known folders for the browser's tree. Ignored
+    /// under `Policy::Roots`, where the roots are the places.
+    pub places: Vec<Place>,
 }

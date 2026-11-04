@@ -27,12 +27,20 @@ export interface Listing {
   dirs: DirItem[];
 }
 
+export interface Place {
+  name: string;
+  path: string;
+  kind: 'root' | 'folder' | 'drive' | 'network';
+}
+
 export interface Session {
   api_version: number;
   mode: 'desktop' | 'server';
   platform: 'windows' | 'macos' | 'linux' | 'android' | 'ios';
   start: { dir: string; file: string | null } | null;
-  roots: DirItem[];
+  /** Top-level places for the browser: Docker roots, or on desktop known
+   * folders (`folder`, name is a stable key like "Pictures") and drives. */
+  roots: Place[];
 }
 
 export interface ExifSummary {
@@ -136,6 +144,21 @@ export class Api {
       `${this.base}/nav?p=${q(dir)}&root=${q(root)}&d=${d}`,
     );
     return r.dir;
+  }
+  /** The browser's layout and history; `{}` when nothing is stored yet. */
+  uiState(): Promise<Record<string, unknown>> {
+    return call(`${this.base}/ui-state`);
+  }
+  async saveUiState(s: Record<string, unknown>): Promise<void> {
+    const res = await fetch(`${this.base}/ui-state`, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(s),
+    }).catch((e: unknown) => {
+      throw new ApiError('network', String(e));
+    });
+    if (!res.ok) throw new ApiError('io', `HTTP ${res.status}`);
   }
   config(): Promise<Settings> {
     return call(`${this.base}/config`);

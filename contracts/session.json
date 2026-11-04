@@ -3,5 +3,5 @@
   "mode": "server",
   "platform": "linux",
   "start": null,
-  "roots": [{ "name": "photos", "path": "/photos" }]
+  "roots": [{ "name": "photos", "path": "/photos", "kind": "root" }]
 }

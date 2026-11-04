@@ -32,6 +32,7 @@ fn state(token: Option<&str>, hosts: &[&str]) -> AppState {
         token: token.map(str::to_owned),
         allowed_hosts: hosts.iter().map(|h| (*h).to_owned()).collect(),
         start: Default::default(),
+        places: Vec::new(),
     }
 }
 

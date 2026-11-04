@@ -62,6 +62,7 @@ pub fn build_state(
     hosts: Vec<String>,
     start: Option<String>,
     data: &Path,
+    places: Vec<photosee_server::state::Place>,
 ) -> AppState {
     AppState {
         fs: Arc::new(LocalFs),
@@ -75,6 +76,7 @@ pub fn build_state(
         token: Some(token),
         allowed_hosts: hosts,
         start: Arc::new(std::sync::RwLock::new(start)),
+        places,
     }
 }
 

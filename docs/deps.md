@@ -36,6 +36,8 @@ on 2026-11-03.
 | tauri-build | 2.7.4 | build script of `app/` (embeds the config, icon, manifest) | the version the M0 spike used |
 | tauri-plugin-single-instance | 2.5.5 | second launch hands its path to the running instance (resident mode) | newest stable 2.x on crates.io (2026-10-28), needs tauri ^2.12. 3.0.0-alpha.* is for tauri 3 and an alpha, so not used. Pinned in `app/Cargo.toml`, not workspace-wide |
 | getrandom | 0.3.4 | OS randomness (BCryptGenRandom) for the 32-byte session token | already in the lockfile through tauri, so no new code is pulled in; pinned in `app/Cargo.toml` |
+| tauri-plugin-dialog | 2.8.4 | native folder picker behind `POST /api/v1/host/pick-folder` | newest stable 2.x (3.x is an alpha for tauri 3). Called from Rust only; the webview has no capability for its IPC commands. Pinned in `app/Cargo.toml` |
+| windows (app) | 0.62.2 | drives (GetLogicalDrives/GetDriveTypeW) and known folders (SHGetKnownFolderPath) for the browser tree, with no disk IO | workspace dependency; features Win32_Storage_FileSystem and Win32_UI_Shell added for it |
 
 ## Web (devDependencies only; the shipped bundle has zero runtime deps)
 

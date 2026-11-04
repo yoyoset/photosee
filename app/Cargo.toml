@@ -23,6 +23,13 @@ tauri = { version = "=2.12.5", features = ["custom-protocol"] }
 tauri-plugin-single-instance = "=2.5.5"
 # OS randomness for the session token (BCryptGenRandom on Windows).
 getrandom = "=0.3.4"
+# Native folder picker, called from Rust only (host route); the webview gets
+# no capability for it. Newest stable 2.x; 3.x is an alpha for tauri 3.
+tauri-plugin-dialog = "=2.8.4"
+
+[target.'cfg(windows)'.dependencies]
+# Drives and known folders for the browser tree (places.rs).
+windows.workspace = true
 
 [build-dependencies]
 tauri-build = { version = "=2.7.4", features = [] }

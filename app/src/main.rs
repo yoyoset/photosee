@@ -10,6 +10,7 @@
 mod args;
 mod host;
 mod perf;
+mod places;
 mod serve;
 mod token;
 mod window;
@@ -37,6 +38,7 @@ fn prepare(start: Option<String>) -> Result<Plan, String> {
         serve::allowed_hosts(port),
         start,
         &serve::data_dir(),
+        places::places(),
     );
     Ok(Plan {
         listener,
@@ -75,6 +77,7 @@ fn run(plan: Plan) -> i32 {
         .plugin(tauri_plugin_single_instance::init(move |app, argv, cwd| {
             on_second_launch(app, &start, &argv, &cwd);
         }))
+        .plugin(tauri_plugin_dialog::init())
         .on_window_event(|w, ev| {
             if let WindowEvent::CloseRequested { api, .. } = ev {
                 api.prevent_close();

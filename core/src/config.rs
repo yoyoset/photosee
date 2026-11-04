@@ -73,13 +73,19 @@ pub fn load(path: &Path) -> Settings {
 
 /// Atomic write (temp file + rename) so a crash never leaves half a file.
 pub fn save(path: &Path, s: &Settings) -> Result<()> {
+    let json = serde_json::to_vec_pretty(&s.clone().normalized())
+        .map_err(|e| crate::Error::corrupt(e.to_string()))?;
+    write_atomic(path, &json)
+}
+
+/// Temp file + rename, creating the parent folder. Shared with the server's
+/// ui-state store.
+pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }
     let tmp = path.with_extension("json.tmp");
-    let json = serde_json::to_vec_pretty(&s.clone().normalized())
-        .map_err(|e| crate::Error::corrupt(e.to_string()))?;
-    std::fs::write(&tmp, json)?;
+    std::fs::write(&tmp, bytes)?;
     std::fs::rename(&tmp, path)?;
     Ok(())
 }

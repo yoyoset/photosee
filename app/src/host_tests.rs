@@ -31,11 +31,21 @@ impl WindowCtl for Fake {
     fn quit(&self) {
         self.log.lock().unwrap().push("quit");
     }
+    fn pick_folder(&self) -> Option<String> {
+        self.log.lock().unwrap().push("pick");
+        Some(r"D:\Photos".into())
+    }
 }
 
 fn app(fake: Arc<Fake>) -> (Router, tempfile::TempDir) {
     let tmp = tempfile::tempdir().unwrap();
-    let state = crate::serve::build_state(TOKEN.into(), vec![HOST.into()], None, tmp.path());
+    let state = crate::serve::build_state(
+        TOKEN.into(),
+        vec![HOST.into()],
+        None,
+        tmp.path(),
+        Vec::new(),
+    );
     let api = photosee_server::router(state.clone(), None);
     (api.merge(routes(fake, state, None)), tmp)
 }
@@ -76,6 +86,7 @@ async fn host_routes_need_the_cookie_and_an_allowed_host() {
         ("POST", "fullscreen"),
         ("POST", "close"),
         ("POST", "quit"),
+        ("POST", "pick-folder"),
     ] {
         let uri = format!("/api/v1/host/{p}");
         assert_eq!(
@@ -168,4 +179,13 @@ async fn perf_route_exists_only_when_asked_for() {
             .0,
         404
     );
+}
+
+#[tokio::test]
+async fn pick_folder_returns_the_picked_path() {
+    let fake = Arc::new(Fake::default());
+    let (app, _t) = app(fake.clone());
+    let got = send(&app, "POST", "/api/v1/host/pick-folder", true, HOST, "").await;
+    assert_eq!(got, (200, r#"{"path":"D:\\Photos"}"#.into()));
+    assert_eq!(*fake.log.lock().unwrap(), ["pick"]);
 }

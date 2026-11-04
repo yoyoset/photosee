@@ -85,6 +85,7 @@ pub fn state_with(fs: Arc<dyn FsBackend>, policy: Policy, queue: IoQueue) -> (Ap
         token: None,
         allowed_hosts: vec![],
         start: Default::default(),
+        places: Vec::new(),
     };
     (state, tmp)
 }

@@ -20,6 +20,8 @@
   window.__PHOTOSEE_HOST__ = Object.freeze({
     setFullscreen: (want) => call('fullscreen', { on: !!want }).then((j) => apply(j.on)),
     isFullscreen: () => on,
+    // Native folder picker (modal). Resolves to a path, or null on cancel.
+    pickFolder: () => call('pick-folder').then((j) => j.path ?? null),
     // Hides the window; the process stays resident (see main.rs).
     close: () => void call('close').catch(() => {}),
     onFullscreenChange(cb) {

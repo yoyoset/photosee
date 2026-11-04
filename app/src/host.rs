@@ -39,6 +39,9 @@ pub trait WindowCtl: Send + Sync + 'static {
     /// Hide, keep the process (resident mode).
     fn hide(&self);
     fn quit(&self);
+    /// The native folder picker, modal to the window. Blocks until the user
+    /// picks a folder or cancels (`None`).
+    fn pick_folder(&self) -> Option<String>;
 }
 
 #[derive(Clone)]
@@ -56,7 +59,8 @@ pub fn routes(win: Arc<dyn WindowCtl>, state: AppState, perf_out: Option<PathBuf
             get(fullscreen_get).post(fullscreen_set),
         )
         .route("/api/v1/host/close", post(close))
-        .route("/api/v1/host/quit", post(quit));
+        .route("/api/v1/host/quit", post(quit))
+        .route("/api/v1/host/pick-folder", post(pick_folder));
     if perf_out.is_some() {
         r = r.route("/api/v1/host/perf", post(perf_report));
     }
@@ -102,6 +106,16 @@ async fn close(State(c): State<Ctl>) -> Response {
 async fn quit(State(c): State<Ctl>) -> Response {
     c.win.quit();
     StatusCode::NO_CONTENT.into_response()
+}
+
+async fn pick_folder(State(c): State<Ctl>) -> Response {
+    // The dialog blocks its thread for as long as the user looks at it.
+    let win = c.win.clone();
+    let path = tokio::task::spawn_blocking(move || win.pick_folder())
+        .await
+        .ok()
+        .flatten();
+    Json(serde_json::json!({ "path": path })).into_response()
 }
 
 async fn perf_report(State(c): State<Ctl>, body: Bytes) -> Response {

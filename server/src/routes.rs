@@ -16,6 +16,7 @@ mod meta;
 mod nav;
 mod session;
 mod thumb;
+mod ui_state;
 
 use crate::AppState;
 use crate::error::ApiError;
@@ -38,6 +39,7 @@ fn api() -> Router<AppState> {
         .route("/meta", get(meta::get))
         .route("/nav", get(nav::get))
         .route("/config", get(config::get).put(config::put))
+        .route("/ui-state", get(ui_state::get).put(ui_state::put))
         // Without this, a mistyped /api/v1 path would fall through to the
         // static UI and answer 200 with index.html.
         .fallback(unknown_endpoint)

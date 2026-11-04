@@ -51,7 +51,13 @@ Any non-2xx response has this body:
 Start-up facts. Golden file: `contracts/session.json`.
 - `start` is the file or folder the app was opened with, or null. `start.file`
   is the file's logical path, which the UI matches against `/list` entries.
-- `roots` is empty on desktop.
+- `roots` are the top-level places the browser offers, each
+  `{name, path, kind}`:
+  - Docker: the configured roots, `kind: "root"`.
+  - Desktop: what the shell supplies, i.e. known folders (`folder`, e.g.
+    Pictures) and drives (`drive`, or `network` for mapped shares). They
+    come from the OS without touching the disks, so a dead network drive
+    cannot stall start-up.
 
 ### GET /list?p=DIR
 Images and subfolders of a directory. Both lists are naturally sorted
@@ -107,6 +113,17 @@ Folder to visit next. Rules:
 
 Returns `{"dir": PATH}`, or `{"dir": null}` at the end. Golden file:
 `contracts/nav.json`.
+
+### GET /ui-state, PUT /ui-state
+The browser's layout and history, stored as one JSON object that the UI
+owns: tree visibility and width, thumbnail size, view mode, sort, recent
+folders and network places. The server only stores it.
+- GET returns `{}` when nothing is stored or the stored file is unreadable.
+- PUT takes a JSON object up to 64 KiB and answers 204.
+- Anything else gets 400 `unsupported`.
+
+It is not kept in localStorage because the desktop server listens on a
+random port, so the page's origin changes on every launch.
 
 ### GET /config, PUT /config
 The six user settings. PUT takes the full object and returns the normalized

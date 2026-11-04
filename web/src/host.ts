@@ -9,6 +9,9 @@ export interface Host {
   close(): void;
   /** Optional: report changes the UI did not ask for (F11, the browser's own Esc). */
   onFullscreenChange?(cb: (on: boolean) => void): () => void;
+  /** Desktop only: the native folder picker. Resolves to the picked path,
+   * or null when the user cancels. Absent in the browser build. */
+  pickFolder?(): Promise<string | null>;
 }
 
 type HostWindow = Window & { __PHOTOSEE_HOST__?: Host };
