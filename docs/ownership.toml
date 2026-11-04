@@ -106,3 +106,7 @@ paths = [
   "core/src/decode/mod.rs", "core/src/lib.rs",
   "core/tests/pipeline_*.rs", "core/tests/jpeg_wic_*.rs",
 ]
+
+# ---- M1 Wave 3 ----
+[W3-PKG]
+paths = ["app/tauri.conf.json", "app/icons/**", "app/wix/**", "app/nsis/**", "scripts/package.ps1", "app/src/serve.rs"]

@@ -58,6 +58,12 @@ merged, because both call into them. T (test top-up) runs last.
 The biggest gap users will notice is C2: a full 24 MP image takes ~0.9 s after
 its thumbnail, all of it server decode + resize + encode.
 
+## M1 Wave 3
+| WP | owner | status | branch |
+|---|---|---|---|
+| W3-PKG NSIS installer, file associations, portable zip | sonnet | running | wp/w3-pkg |
+| W3-REV security + accessibility review | orchestrator | todo, after W3-PKG | |
+
 ### C2: transcode speed (partly done; still open for 24 MP)
 Budget for a non-prefetched 24 MP JPEG to 2560x1440 is ≤150 ms. Measured, release build,
 6000x4000 q92: decode 411 ms, resize 86 ms (CatmullRom), encode 170 ms, total 681 ms.
