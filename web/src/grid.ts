@@ -6,7 +6,7 @@ import type { ImageSource } from './api';
 import { CELL_LABEL_PX, CELL_PAD_PX, THUMB_WHEEL_STEP_PX } from './browser-consts';
 import { icon } from './browser-icons';
 import { splitMiddle, type BrowserItem } from './browser-items';
-import { gridLayout, thumbEdge } from './grid-geometry';
+import { gridLayout, thumbRequest } from './grid-geometry';
 import { VirtualView } from './grid-virtual';
 
 /** What the browser needs from either content view. */
@@ -149,7 +149,11 @@ export class GridView implements ContentView {
       img.alt = '';
       img.draggable = false;
       img.decoding = 'async';
-      img.src = this.src.thumbUrl(it.path, thumbEdge(this.size, this.o.dpr()));
+      const req = thumbRequest(this.size, this.o.dpr());
+      // 'prefetch': a wall of thumbnails must not outrank the image on screen.
+      img.src = 'edge' in req
+        ? this.src.thumbUrl(it.path, req.edge)
+        : this.src.imageUrl(it.path, { w: req.box, h: req.box }, 'prefetch');
       thumb.append(img);
     }
     cell.append(thumb);

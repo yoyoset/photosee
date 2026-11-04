@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cellPos, clampThumb, gridLayout, listLayout, moveIndex, rowCount, scrollToReveal, sliderAction, thumbEdge,
+  cellPos, clampThumb, gridLayout, listLayout, moveIndex, rowCount, scrollToReveal, sliderAction, thumbEdge, thumbRequest,
   totalHeight, visibleRange,
 } from '../src/grid-geometry';
 
@@ -143,5 +143,24 @@ describe('size slider', () => {
     expect(sliderAction(400, 'single')).toEqual({ view: 'grid', thumb: 400 });
     expect(sliderAction(10, 'single')).toEqual({ view: 'grid', thumb: 64 });
     expect(sliderAction(200, 'grid')).toEqual({ thumb: 200 });
+  });
+});
+
+describe('thumbRequest', () => {
+  it('uses /thumb edges up to 256 device px', () => {
+    expect(thumbRequest(160, 1)).toEqual({ edge: 192 });
+    expect(thumbRequest(128, 2)).toEqual({ edge: 256 });
+  });
+
+  it('beyond 256 device px asks for a box, in steps of 128', () => {
+    expect(thumbRequest(160, 2)).toEqual({ box: 384 });
+    expect(thumbRequest(300, 1)).toEqual({ box: 384 });
+    expect(thumbRequest(640, 1)).toEqual({ box: 640 });
+    expect(thumbRequest(640, 2)).toEqual({ box: 1280 });
+  });
+
+  it('nearby slider positions share a box, so the cache is hit while resizing', () => {
+    expect(thumbRequest(330, 1)).toEqual(thumbRequest(380, 1));
+    expect(thumbRequest(330, 1)).not.toEqual(thumbRequest(400, 1));
   });
 });

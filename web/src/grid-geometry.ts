@@ -2,7 +2,8 @@
 // The same geometry serves the details list (one column, thin rows).
 
 import {
-  CELL_LABEL_PX, CELL_PAD_PX, GRID_MARGIN_PX, THUMB_EDGES, THUMB_MAX_PX, THUMB_MIN_PX,
+  BOX_STEP_PX, CELL_LABEL_PX, CELL_PAD_PX, GRID_MARGIN_PX, THUMB_BOX_THRESHOLD_PX, THUMB_EDGES, THUMB_MAX_PX,
+  THUMB_MIN_PX,
 } from './browser-consts';
 
 export interface Layout {
@@ -102,4 +103,17 @@ export function thumbEdge(cssPx: number, dpr: number): number {
   const want = cssPx * Math.max(1, dpr);
   const max = THUMB_EDGES[THUMB_EDGES.length - 1] as number;
   return THUMB_EDGES.find((e) => e >= want) ?? max;
+}
+
+export type ThumbRequest = { edge: number } | { box: number };
+
+/** How a cell gets its picture. Up to ~256 device px the /thumb endpoint is
+ * right (cheap, cached). Beyond that it is not: /thumb is capped at 512 and
+ * an EXIF thumbnail inside a photo is only 160 px, so big cells would be
+ * blurry; they ask for a resized image instead, in coarse box steps so
+ * dragging the slider keeps hitting the browser cache. */
+export function thumbRequest(cssPx: number, dpr: number): ThumbRequest {
+  const need = cssPx * Math.max(1, dpr);
+  if (need <= THUMB_BOX_THRESHOLD_PX) return { edge: thumbEdge(cssPx, dpr) };
+  return { box: Math.ceil(need / BOX_STEP_PX) * BOX_STEP_PX };
 }
