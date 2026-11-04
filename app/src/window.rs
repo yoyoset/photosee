@@ -29,6 +29,11 @@ impl WindowCtl for TauriWin {
     }
 
     fn hide(&self) {
+        // Without background mode, "close" means quit (tray.rs).
+        if !crate::tray::resident() {
+            self.quit();
+            return;
+        }
         // Leave fullscreen first, so the next show is a normal window and
         // not a fullscreen one the user did not ask for.
         self.set_fullscreen(false);

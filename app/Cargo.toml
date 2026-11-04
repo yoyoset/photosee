@@ -18,7 +18,7 @@ tokio.workspace = true
 serde_json.workspace = true
 # `custom-protocol` is what the Tauri CLI enables for production builds; without
 # it the release binary would still be a "dev" build (no embedded assets path).
-tauri = { version = "=2.12.5", features = ["custom-protocol"] }
+tauri = { version = "=2.12.5", features = ["custom-protocol", "tray-icon"] }
 # Newest stable 2.x (3.0.0-alpha.* targets tauri 3). Why exact: docs/deps.md.
 tauri-plugin-single-instance = "=2.5.5"
 # OS randomness for the session token (BCryptGenRandom on Windows).

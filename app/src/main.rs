@@ -1,18 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-//! PhotoSee desktop shell: Tauri window + the embedded axum server, resident.
+//! PhotoSee desktop shell: Tauri window + the embedded axum server.
 //!
-//! Resident mode (G0 decision, docs/packages/W2-APP.md): the first open of
-//! the day pays the ~1 s cold start; closing the window only hides it; later
-//! opens reuse the warm WebView2. Quit with Ctrl+Q (Cmd+Q on macOS) in the
-//! window. There is no tray icon, so a hidden instance can only be ended by
-//! launching again and pressing Ctrl+Q, or from Task Manager. That is a
-//! deliberate cut (tray is out of scope), listed in the report.
+//! Background mode (G0's resident mode) is opt-in from the tray menu
+//! (tray.rs). Off by default: the close button quits. On: closing hides the
+//! window and later opens reuse the warm WebView2. The tray icon is always
+//! visible, so a running process can always be seen and quit. That replaced
+//! the first version's invisible resident process after user feedback.
 mod args;
 mod host;
 mod perf;
 mod places;
 mod serve;
 mod token;
+mod tray;
 mod window;
 
 use axum::Router;
@@ -80,12 +80,16 @@ fn run(plan: Plan) -> i32 {
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(|w, ev| {
             if let WindowEvent::CloseRequested { api, .. } = ev {
-                api.prevent_close();
-                let _ = w.hide();
+                // Background mode hides; otherwise the close quits (tray.rs).
+                if tray::on_close(w.app_handle()) {
+                    api.prevent_close();
+                }
             }
         })
         .setup(move |app| {
             perf::mark("setup");
+            tray::load();
+            tray::install(app)?;
             let ctl = Arc::new(window::TauriWin(app.handle().clone()));
             let router: Router = photosee_server::router(state.clone(), Some(web_dir))
                 .merge(host::routes(ctl, state, perf::out_path()));
