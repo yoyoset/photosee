@@ -44,11 +44,47 @@ pub fn info(src: &dyn ReadAt, fmt: Format) -> Result<ImageInfo> {
     })
 }
 
-/// `max` is ignored. None of these decoders can reduce cheaply: zune-jpeg
-/// (behind `image`) has no DCT-domain scaling, and the others decode
-/// full-size by nature. Callers resize afterwards.
+/// `max` is a hint: on Windows a JPEG comes back DCT-reduced toward it by
+/// WIC (`jpeg_wic`), everything else full-size (zune-jpeg and the other
+/// decoders cannot reduce cheaply). Callers resize afterwards either way.
+///
+/// A WIC failure never surfaces while `image` can still decode the file.
+/// Only a backend error (the bytes were unreadable, not undecodable) is
+/// returned as is: the fallback would just read them again and fail again.
 pub fn decode(src: &dyn ReadAt, fmt: Format, max: Option<Size>) -> Result<Rgba8> {
-    let _ = max;
+    #[cfg(windows)]
+    if fmt == Format::Jpeg && wic_enabled() {
+        if !jpeg_complete(src)? {
+            return Err(Error::corrupt("JPEG: truncated (no EOI after the scan)"));
+        }
+        match crate::decode::jpeg_wic::decode(src, max) {
+            Ok(img) => return Ok(img),
+            Err(e) if is_backend(&e) => return Err(e),
+            Err(_) => {}
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = max; // only the WIC path uses the hint
+    decode_image(src, fmt)
+}
+
+#[cfg(windows)]
+fn is_backend(e: &Error) -> bool {
+    matches!(
+        e.code,
+        ErrorCode::NotFound | ErrorCode::Forbidden | ErrorCode::Timeout | ErrorCode::Io
+    )
+}
+
+/// Benchmarks and tests switch the WIC path off to measure or exercise the
+/// pure-Rust one. Read per call (a map lookup, nothing next to a decode).
+#[cfg(windows)]
+fn wic_enabled() -> bool {
+    std::env::var_os("PHOTOSEE_NO_WIC").is_none()
+}
+
+/// The `image` crate path: every format, full size, the same on all platforms.
+pub fn decode_image(src: &dyn ReadAt, fmt: Format) -> Result<Rgba8> {
     if fmt == Format::Jpeg && !jpeg_complete(src)? {
         return Err(Error::corrupt("JPEG: truncated (no EOI after the scan)"));
     }
@@ -123,7 +159,7 @@ fn image_format(fmt: Format) -> Result<ImageFormat> {
     })
 }
 
-fn check_pixels(s: Size) -> Result<()> {
+pub(crate) fn check_pixels(s: Size) -> Result<()> {
     if s.pixels() > MAX_PIXELS {
         return Err(too_large(format!(
             "{}x{} exceeds {MAX_PIXELS} pixels",

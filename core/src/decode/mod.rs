@@ -9,6 +9,8 @@
 pub mod heic;
 #[cfg(windows)]
 pub mod heic_wic;
+#[cfg(windows)]
+pub mod jpeg_wic;
 pub mod jxl;
 pub mod psd;
 pub mod raw;

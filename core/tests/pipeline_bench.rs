@@ -10,8 +10,13 @@ mod util;
 
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
+use photosee_core::decode::std_formats::decode_image;
+use photosee_core::encode::encode;
 use photosee_core::pipeline::{Rendered, render};
+use photosee_core::resize::resize;
 use photosee_core::testfs::MemFs;
+// `decode` is std_formats' (WIC on Windows); the pipeline calls the same one.
+use photosee_core::decode::std_formats::decode;
 use photosee_core::{Format, Rgba8, Size};
 use std::path::Path;
 use std::time::Instant;
@@ -46,32 +51,52 @@ fn median_ms(mut f: impl FnMut()) -> f64 {
     t[RUNS / 2]
 }
 
+type DecodeFn = fn(&Vec<u8>, Size) -> Rgba8;
+
+/// decode / resize / encode / render for one source size, for the path in
+/// use (WIC on Windows: the decode is already reduced) and for the `image`
+/// path (full-size decode), which is what every other platform runs.
+fn split(label: &str, w: u32, h: u32) {
+    let src = jpeg(&photo_like(w, h), 92);
+    println!("{label}: {w}x{h} JPEG q92, {} bytes", src.len());
+    let box_ = Size::new(2560, 1440);
+    let target = photosee_core::resize::fit(Size::new(w, h), box_, false);
+    let paths: [(&str, DecodeFn); 2] = [
+        ("in use", |s, t| decode(s, Format::Jpeg, Some(t)).unwrap()),
+        ("image ", |s, _| decode_image(s, Format::Jpeg).unwrap()),
+    ];
+    for (name, dec_fn) in paths {
+        let mut img = None;
+        let dec = median_ms(|| img = Some(dec_fn(&src, target)));
+        let img = img.unwrap();
+        let mut small = None;
+        let res = median_ms(|| small = Some(resize(&img, target).unwrap()));
+        let small = small.unwrap();
+        let enc = median_ms(|| drop(encode(&small, 85).unwrap()));
+        println!(
+            "  {name} -> {}x{} (decoded {}x{}): decode {dec:.1} ms, resize {res:.1} ms,              encode {enc:.1} ms",
+            target.w, target.h, img.size.w, img.size.h
+        );
+    }
+    let fs = MemFs::new();
+    fs.file("/b/x.jpg", &src);
+    let total = median_ms(|| {
+        let r = render(&fs, Path::new("/b/x.jpg"), box_, &[]).unwrap();
+        assert!(matches!(r, Rendered::Transcoded { .. }));
+    });
+    println!("  render end to end (median of {RUNS}): {total:.1} ms");
+}
+
 #[test]
 #[ignore = "benchmark: run in release with --ignored --nocapture"]
 fn bench_24mp_jpeg_to_2560x1440() {
-    let src = jpeg(&photo_like(6000, 4000), 92);
-    println!("source: 6000x4000 JPEG q92, {} bytes", src.len());
-    let box_ = Size::new(2560, 1440);
-    let target = photosee_core::resize::fit(Size::new(6000, 4000), box_, false);
-    let mut img = None;
-    let dec =
-        median_ms(|| img = Some(photosee_core::decode::decode(&src, Format::Jpeg, None).unwrap()));
-    let img = img.unwrap();
-    let mut small = None;
-    let res = median_ms(|| small = Some(photosee_core::resize::resize(&img, target).unwrap()));
-    let small = small.unwrap();
-    let enc = median_ms(|| drop(photosee_core::encode::encode(&small, 85).unwrap()));
-    let fs = MemFs::new();
-    fs.file("/b/24mp.jpg", &src);
-    let total = median_ms(|| {
-        let r = render(&fs, Path::new("/b/24mp.jpg"), box_, &[]).unwrap();
-        assert!(matches!(r, Rendered::Transcoded { .. }));
-    });
-    println!(
-        "24MP -> {}x{} (median of {RUNS}): decode {dec:.1} ms, resize {res:.1} ms, \
-         encode {enc:.1} ms, render end to end {total:.1} ms",
-        target.w, target.h
-    );
+    split("24MP", 6000, 4000);
+}
+
+#[test]
+#[ignore = "benchmark: run in release with --ignored --nocapture"]
+fn bench_12mp_jpeg_to_2560x1440() {
+    split("12MP", 4000, 3000);
 }
 
 fn fir(img: &Rgba8, to: Size, f: FilterType) -> Vec<u8> {
@@ -127,5 +152,15 @@ fn bench_resize_filters() {
         let a = stddev(&fir(&alias, to, f), to.w, to.h);
         let p = stddev(&fir(&pass, to, f), to.w, to.h);
         println!("{name:>10}: {ms:6.1} ms  alias residual {a:5.2}  passband {p:5.2}");
+    }
+}
+
+#[test]
+#[ignore = "benchmark: run in release with --ignored --nocapture"]
+fn bench_wic_decode_by_scale() {
+    let src = jpeg(&photo_like(6000, 4000), 92);
+    for (w, h) in [(6000, 4000), (3000, 2000), (1500, 1000), (750, 500)] {
+        let ms = median_ms(|| drop(decode(&src, Format::Jpeg, Some(Size::new(w, h))).unwrap()));
+        println!("24MP decode with max {w}x{h}: {ms:.1} ms");
     }
 }
