@@ -61,7 +61,7 @@ its thumbnail, all of it server decode + resize + encode.
 ## M1 Wave 3
 | WP | owner | status | branch |
 |---|---|---|---|
-| W3-PKG NSIS installer, file associations, portable zip | sonnet | running | wp/w3-pkg |
+| W3-PKG NSIS installer, file associations, portable zip | sonnet | merged 095249d; installer 3.93 MiB per-user, zip 5.54 MiB; Open-with/Capabilities only (never overwrites defaults); install/open/uninstall smoke test leaves HKCU identical | wp/w3-pkg |
 | W3-REV security + accessibility review | orchestrator | todo, after W3-PKG | |
 
 ### C2: transcode speed (partly done; still open for 24 MP)
