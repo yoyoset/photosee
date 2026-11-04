@@ -122,3 +122,13 @@ paths = [
   "web/test/details*.test.ts", "web/test/uistate*.test.ts", "web/test/controller*.test.ts",
   "web/test/keys.test.ts", "web/test/state.test.ts", "web/test/i18n.test.ts",
 ]
+
+[BR2]
+paths = [
+  "web/src/browser*.ts", "web/src/tree*.ts", "web/src/grid*.ts", "web/src/details*.ts",
+  "web/src/single*.ts", "web/src/uistate*.ts", "web/src/browser.css", "web/src/i18n.ts",
+  "web/src/filmstrip.ts", "web/src/controller*.ts",
+  "web/test/browser*.test.ts", "web/test/tree*.test.ts", "web/test/grid*.test.ts",
+  "web/test/single*.test.ts", "web/test/uistate*.test.ts", "web/test/filmstrip.test.ts",
+  "web/test/controller*.test.ts",
+]
