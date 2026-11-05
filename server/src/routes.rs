@@ -21,6 +21,10 @@ mod ui_state;
 use crate::AppState;
 use crate::error::ApiError;
 use axum::Router;
+use axum::extract::Request;
+use axum::http::{HeaderValue, StatusCode, header};
+use axum::middleware::{Next, from_fn};
+use axum::response::Response;
 use axum::routing::get;
 use photosee_core::{Error, ErrorCode};
 use std::path::PathBuf;
@@ -45,13 +49,37 @@ fn api() -> Router<AppState> {
         .fallback(unknown_endpoint)
 }
 
+/// Vite names bundle files by content hash, so `/assets/*` never changes
+/// under a name; index.html changes on every deploy and names the new
+/// bundle, so it must be revalidated (ETag, 304) every time. Without any
+/// Cache-Control the browser guessed a lifetime from Last-Modified, and a
+/// phone kept the old UI after the Docker image was redeployed (2026-11-05).
+async fn ui_cache(req: Request, next: Next) -> Response {
+    let hashed = req.uri().path().starts_with("/assets/");
+    let mut resp = next.run(req).await;
+    let st = resp.status();
+    if st.is_success() || st == StatusCode::NOT_MODIFIED {
+        let v = if hashed {
+            "public, max-age=31536000, immutable"
+        } else {
+            "no-cache"
+        };
+        resp.headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static(v));
+    }
+    resp
+}
+
 pub fn router(state: AppState, web_dir: Option<PathBuf>) -> Router {
     let mut app = Router::new().nest("/api/v1", api());
     if let Some(dir) = web_dir {
         // index.html answers every unknown path with 200: the UI is a
         // single page and may be opened at any address.
         let index = ServeFile::new(dir.join("index.html"));
-        app = app.fallback_service(ServeDir::new(dir).fallback(index));
+        let ui = Router::new()
+            .fallback_service(ServeDir::new(dir).fallback(index))
+            .layer(from_fn(ui_cache));
+        app = app.fallback_service(ui);
     }
     // Added last so the guard wraps the API, the static files and the
     // fallback alike.

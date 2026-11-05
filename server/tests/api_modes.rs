@@ -145,6 +145,22 @@ async fn static_files_come_from_web_dir_with_index_fallback() {
         StatusCode::NOT_FOUND
     );
     assert!(!js.header("content-security-policy").is_empty());
+    // index.html revalidates every time (a redeploy must reach phones);
+    // hashed bundle files are cached for good.
+    std::fs::create_dir(web.path().join("assets")).unwrap();
+    std::fs::write(web.path().join("assets").join("i-1a2b.js"), "let y;").unwrap();
+    for (uri, cc) in [
+        ("/", "no-cache"),
+        ("/some/where", "no-cache"),
+        ("/app.js", "no-cache"),
+        ("/assets/i-1a2b.js", "public, max-age=31536000, immutable"),
+    ] {
+        assert_eq!(
+            get(&env.app, uri).await.header("cache-control"),
+            cc,
+            "{uri}"
+        );
+    }
 }
 
 #[tokio::test]
