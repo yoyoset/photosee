@@ -36,6 +36,16 @@ node app/nsis/smoke.mjs                     # 安装包冒烟：静默装到 %TE
 cargo run --release --manifest-path tools/gen-fixtures/Cargo.toml   # 生成 fixtures/generated/（gitignored）
 ```
 
+**Docker（LAN 服务端，2026-11-05 起部署在 $LAN_HOST:8111）：**
+```bash
+bash scripts/docker-stage.sh   # 本机交叉编译 musl 静态二进制 + web/dist → target/docker（约 3 分钟）
+tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && mkdir -p $DEPLOY_DIR/build && tar --no-same-owner -xzf - -C $DEPLOY_DIR/build && chmod -R a+rX $DEPLOY_DIR/build && chmod 755 $DEPLOY_DIR/build/photosee-server && cd $DEPLOY_DIR/build && docker build -t photosee:local . && cd $DEPLOY_DIR && docker compose up -d --force-recreate"
+```
+- 首次需要 `rustup target add x86_64-unknown-linux-musl`。镜像是 `FROM scratch`，13 上不用拉任何基础镜像。
+- 13 是非特权 LXC：解 tar 必须带 `--no-same-owner`，否则 chown 报错退出。
+- compose 文件在 13 的 `$DEPLOY_DIR/docker-compose.yml`（不进仓库，里面是私人路径），数据（设置、缩略图缓存）在 `$DEPLOY_DIR/data`，属主 65534。
+- 从 git bash 给 Python/curl 传 `/disk1/...` 这类参数会被 MSYS 改写成 `C:/Program Files/Git/disk1/...`，服务端回 403。要加 `MSYS_NO_PATHCONV=1`。
+
 - 产物在 `target\release\bundle\nsis\PhotoSee_<ver>_x64-setup.exe` 和 `target\release\bundle\PhotoSee-<ver>-portable.zip`。
 - 版本号要在三处同时改：`Cargo.toml` 的 `[workspace.package]`、`app/tauri.conf.json`、`web/package.json`。`package.ps1` 从 `tauri.conf.json` 读版本号，给 zip 命名。
 - 11-05 的基线：Rust 247 passed / 9 ignored，web 466 passed，bundle 39,923 B gzip。
@@ -93,6 +103,10 @@ cargo run --release --manifest-path tools/gen-fixtures/Cargo.toml   # 生成 fix
 - 安装包没有代码签名。
 - macOS/Linux 外壳没做（`places()` 在非 Windows 上返回空）。
 - `dev.photosee.app` 这个 identifier 以 `.app` 结尾，Tauri 会警告（和 macOS bundle 冲突），Windows 上没影响。
+
+- **Docker 服务端没有登录**：web UI 还没有密码页，所以设了 `PHOTOSEE_PASSWORD` 会拒绝启动，防止用户以为有保护。现在只靠 LAN 和 `PHOTOSEE_HOSTS` 白名单（防 DNS rebinding），并且全程只读。
+- Docker 镜像用 musl 的默认内存分配器，多线程转码可能比 glibc 慢，没有专门对比测过。13 上 1920×1080 转码实测约 190 ms。
+- `.cbz` 的限制见 `docs/non-goals.md`：不支持 CBR/CB7/ZIP64，GBK 文件名会显示成乱码，安装包没把 .cbz 加进「打开方式」。
 
 ## 6. 不要做的事
 

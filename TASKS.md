@@ -139,3 +139,14 @@ Known breakage: `node app/measure.mjs startup` assumes closing the window keeps 
 process alive. Since resident mode became opt-in (026ef01) the process exits and the
 script dies in `closeWindow`. Fix it by turning resident on for the run, or measure
 cold start only.
+
+## CBZ + Docker on $LAN_HOST (2026-11-05)
+| step | status | note |
+|---|---|---|
+| `.cbz` as folders (`core/src/archive/`) | done | a51eb82. Stored pages are a zero-copy window (passthrough + Range), deflated ones inflate in memory (cap 256 MiB). A lone wrapper folder is collapsed (23 of the 32 archives on 13 have one) |
+| JPEG stray byte before a marker | fixed | c12fd09. Was 422 "lost marker sync" on 1498/1925 pages of the "Comics" comics; libjpeg skips such bytes |
+| standalone server + Docker | done | 2b04dbc. musl static binary, `FROM scratch`, 8.75 MB; 13:$DEPLOY_DIR, port 8111, roots /mnt/disk1 and /mnt/disk2 read-only; homepage card in 「影音与相册」 |
+| back button / system Back in viewer | done | 5d7637b. Reported by the user: without a keyboard only Esc left the viewer |
+| sweep of every .cbz on 13 | measured | full pass (every page) over 10 Comics volumes + a manga series v01-v06: all 200. Then every 10th page of all 32 archives: 778/778 200. a manga series (2100x3181 JPEG -> 1920x1080 box) about 0.45 s per page sequentially from Windows over the LAN; not profiled (musl allocator is a suspect) |
+
+Not done: CBR (6 files on 13 stay invisible), login for the Docker build, phone layout of the browser (the tree takes about half of a 375 px screen).
