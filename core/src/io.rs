@@ -123,7 +123,9 @@ impl FsBackend for LocalFs {
 }
 
 fn entry_from(name: String, meta: &std::fs::Metadata) -> Option<Entry> {
-    let kind = if meta.is_dir() {
+    // A comic archive is listed as a folder; `archive::ArchiveFs` opens it.
+    // Its size stays the file length so the index cache can key on it.
+    let kind = if meta.is_dir() || crate::archive::is_archive_name(&name) {
         EntryKind::Dir
     } else {
         EntryKind::Image(crate::format::from_extension(&name)?)

@@ -105,11 +105,18 @@ impl FsBackend for MemFs {
         }
         let files = self.files.lock().expect("memfs lock");
         let bytes = files.get(path).ok_or_else(|| not_found(path))?;
-        let fmt = crate::format::from_extension(&name)
-            .ok_or_else(|| Error::unsupported(format!("not an image: {name}")))?;
+        // Same rule as LocalFs: archives list as folders, size = file length.
+        let kind = if crate::archive::is_archive_name(&name) {
+            EntryKind::Dir
+        } else {
+            EntryKind::Image(
+                crate::format::from_extension(&name)
+                    .ok_or_else(|| Error::unsupported(format!("not an image: {name}")))?,
+            )
+        };
         Ok(Entry {
             name,
-            kind: EntryKind::Image(fmt),
+            kind,
             size: bytes.len() as u64,
             mtime_ms: 0,
         })

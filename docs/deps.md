@@ -21,6 +21,7 @@ on 2026-11-03.
 | alphanumeric-sort | 1.5.8 | natural sort | natord last released 2015 |
 | serde, serde_json | 1.0.229, 1.0.154 | API and config JSON | |
 | thiserror | 2.0.21 | error type derive | |
+| miniz_oxide | 0.9.1 | raw DEFLATE for `.cbz` members (`core/src/archive/zip.rs`) | already in the lockfile through flate2/backtrace, so no new code is pulled in; pure Rust. The `zip` crate was not used: it brings bzip2/zstd/aes options and its own file handling, while a read-only central-directory walk is ~150 lines |
 | windows | 0.62.2 | WIC for HEIC on Windows | windows-only target dependency |
 | axum | 0.8.9 | HTTP server | |
 | tokio | 1.54.1 | async runtime, blocking pool for IO | |

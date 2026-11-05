@@ -1,6 +1,7 @@
 //! The embedded server: state, socket, and where the web UI lives.
 
 use axum::Router;
+use photosee_core::archive::ArchiveFs;
 use photosee_core::io::LocalFs;
 use photosee_core::thumbcache::ThumbCache;
 use photosee_server::AppState;
@@ -65,7 +66,7 @@ pub fn build_state(
     places: Vec<photosee_server::state::Place>,
 ) -> AppState {
     AppState {
-        fs: Arc::new(LocalFs),
+        fs: Arc::new(ArchiveFs::new(LocalFs)),
         // Not a sandbox: the user may open any file they can read. The
         // token + Host check is what keeps web pages out (guard.rs).
         policy: Arc::new(Policy::AnyLocal),

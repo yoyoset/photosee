@@ -3213,6 +3213,7 @@ dependencies = [
  "image",
  "jxl-oxide",
  "kamadak-exif",
+ "miniz_oxide 0.9.1",
  "moxcms 0.9.1",
  "photosee-core",
  "rawler",

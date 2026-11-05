@@ -65,6 +65,11 @@ Images and subfolders of a directory. Both lists are naturally sorted
 guessed from the file extension; `/img` confirms it from magic bytes.
 `parent` is null at a root. Golden file: `contracts/list.json`.
 
+Comic archives (`.cbz`) are listed in `dirs` and behave as folders in every
+call: `/list`, `/img`, `/thumb`, `/meta` and `/nav` accept paths that run
+through them, e.g. `/books/Vol 1.cbz/001.jpg`. A single folder wrapping all
+pages is collapsed into the archive root. Paths stay opaque to the UI.
+
 The server caches listings and rescans only when the directory's mtime
 changes. On a cold NAS this call can take seconds, so the UI must not wait
 for it before showing the first image.

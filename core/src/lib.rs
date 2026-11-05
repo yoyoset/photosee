@@ -1,6 +1,7 @@
 //! PhotoSee core: everything testable without a UI or a network stack.
 //! See docs/api.md for the module ownership map and contracts.
 
+pub mod archive;
 pub mod color;
 pub mod config;
 pub mod decode;
