@@ -1,5 +1,8 @@
 # Working on PhotoSee (read this first: humans, Claude sub-agents, Pi workers)
 
+> **Taking over the project? Read [HANDOFF.md](HANDOFF.md) first**: current state, exact
+> build/test/package/release commands, pitfalls hit so far, open issues, what not to do.
+
 PhotoSee is a minimal, very fast image viewer: a Rust core, an axum HTTP API,
 and a framework-free TypeScript UI shipped in Tauri 2 and Docker. The plan
 lives with the orchestrator. Everything a worker needs is in this repo:
