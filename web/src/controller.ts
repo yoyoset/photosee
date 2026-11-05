@@ -46,6 +46,7 @@ export function createController(getCtx: () => Ctx, getParts: () => Parts): Cont
       case 'toggle_help': return parts.help.toggle();
       case 'open_settings': return parts.settings.open();
       case 'scrub': return ctx.store.set({ scrubbing: a.active });
+      case 'close_viewer': return ctx.store.set({ mode: 'browser' });
       case 'escape': ctx.esc.handle();
     }
   };

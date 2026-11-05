@@ -7,6 +7,7 @@ import {
 } from './constants';
 import type { Ctx } from './ctx';
 import { mountFilmstrip } from './filmstrip';
+import { ICONS } from './overlay-icons';
 import { t, type Key } from './i18n';
 import type { ViewState } from './state';
 
@@ -84,23 +85,6 @@ export function titleParts(item: ImageItem, index: number, total: number, dir: s
   return { ...splitName(item.name), pos: `${index + 1} / ${total}`, folder: folderName(dir) };
 }
 
-const SVG = (body: string): string =>
-  `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" ` +
-  `stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-
-const ICONS = {
-  prev: SVG('<path d="M15 5l-7 7 7 7"/>'),
-  next: SVG('<path d="M9 5l7 7-7 7"/>'),
-  play: SVG('<path d="M8 5v14l11-7z" fill="currentColor"/>'),
-  pause: SVG('<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/>'),
-  ccw: SVG('<path d="M3 4v6h6M5.1 15a8 8 0 1 0 1.9-8.3L3 10"/>'),
-  cw: SVG('<path d="M21 4v6h-6M18.9 15a8 8 0 1 1-1.9-8.3L21 10"/>'),
-  fit: SVG('<path d="M3 6h18v12H3zM8 10h8v4H8z"/>'),
-  actual: SVG('<path d="M3 6h18v12H3z"/><text x="12" y="15.5" font-size="8" text-anchor="middle" fill="currentColor" stroke="none">1:1</text>'),
-  fullscreen: SVG('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
-  settings: SVG('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
-};
-
 interface BtnView { id: string; action: Action; label: Key; icon: string; shortcut: string }
 
 /** The eight buttons, in bar order, for the given state. Pure. */
@@ -131,6 +115,17 @@ export function buttonViews(s: ViewState, platform: Session['platform']): BtnVie
 export function tooltip(v: BtnView): string {
   const label = t(v.label);
   return v.shortcut ? `${label} (${v.shortcut})` : label;
+}
+
+/** Top-left, where phones put "back": without a keyboard there is no Esc. */
+function backButton(ctx: Ctx): HTMLButtonElement {
+  const b = el('button', 'ov-btn ov-back');
+  b.type = 'button';
+  b.innerHTML = ICONS.back; // constant markup, never data from a file
+  b.setAttribute('aria-label', t('btn.back'));
+  b.title = `${t('btn.back')} (Esc)`;
+  b.addEventListener('click', () => ctx.dispatch({ type: 'close_viewer' }));
+  return b;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLElementTagNameMap[K] {
@@ -234,7 +229,7 @@ class OverlayView {
       pos: el('span', 'ov-pos'), folder: el('span', 'ov-folder'),
     };
     title.append(...Object.values(this.parts));
-    top.append(title);
+    top.append(backButton(ctx), title);
     this.unFilm = mountFilmstrip(this.bottom, ctx);
     for (const v of buttonViews(ctx.store.get(), ctx.session.platform)) {
       const btn = el('button', 'ov-btn');

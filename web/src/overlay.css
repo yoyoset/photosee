@@ -17,13 +17,14 @@
 }
 
 .ov-top {
-  top: 0;
+  top: 0; display: flex; align-items: center; gap: 8px;
   padding: calc(env(safe-area-inset-top, 0px) + 10px) calc(env(safe-area-inset-right, 0px) + 16px)
     28px calc(env(safe-area-inset-left, 0px) + 16px);
   background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
 }
+.ov-back { flex: none; pointer-events: auto; margin: -6px 0; }
 /* Only the stem shrinks, so the extension always stays visible. */
-.ov-title { display: flex; white-space: pre; text-shadow: 0 1px 3px #000; }
+.ov-title { min-width: 0; display: flex; white-space: pre; text-shadow: 0 1px 3px #000; }
 .ov-stem, .ov-folder { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ov-stem { flex: 0 1 auto; }
 .ov-folder { flex: 0 4 auto; color: var(--fg-dim); }

@@ -136,10 +136,10 @@ describe('mountOverlay: buttons', () => {
   it.each(['windows', 'macos'] as const)('dispatches one action per button on %s', (platform) => {
     const { root, dispatch } = setup(platform);
     const btns = [...root.querySelectorAll<HTMLButtonElement>('.ov-btn')];
-    expect(btns.length).toBe(8);
+    expect(btns.length).toBe(9); // back (top-left) + the eight in the bar
     btns.forEach((b) => b.click());
     expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
-      { type: 'prev' }, { type: 'toggle_slideshow' }, { type: 'next' },
+      { type: 'close_viewer' }, { type: 'prev' }, { type: 'toggle_slideshow' }, { type: 'next' },
       { type: 'rotate', quarterTurns: -1 }, { type: 'rotate', quarterTurns: 1 },
       { type: 'zoom_toggle' }, { type: 'toggle_fullscreen' }, { type: 'open_settings' },
     ]);

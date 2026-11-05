@@ -18,6 +18,7 @@ import { mountOverlay } from './overlay';
 import type { SlideshowHandle } from './slideshow-ui';
 import type { UiPrefs } from './uistate';
 import { mountViewer, type Viewer, type ViewerOptions } from './viewer';
+import { bindViewerHistory } from './viewer-history';
 import type { PanelHandle } from './help';
 
 export interface ModeDeps {
@@ -100,6 +101,7 @@ class ModeSwitcher implements Modes {
       mountOverlay(doc.getElementById('overlay') as HTMLElement, ctx),
       bindKeys(win, ctx.session.platform, (a: Action) => ctx.dispatch(a)),
       bindGestures(stage, ctx),
+      bindViewerHistory(win, () => ctx.store.set({ mode: 'browser' })),
     ];
   }
 

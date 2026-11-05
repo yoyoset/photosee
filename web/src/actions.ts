@@ -15,5 +15,8 @@ export type Action =
   | { type: 'pan_by'; dx: number; dy: number }
   | { type: 'toggle_info' } | { type: 'toggle_help' } | { type: 'open_settings' }
   | { type: 'escape' }
+  /** Back to the folder view in one step, whatever is open (the on-screen
+   * back button; phones have no Esc key). */
+  | { type: 'close_viewer' }
   /** Arrow key held (true) or released (false); see KEY_REPEAT_SETTLE_MS. */
   | { type: 'scrub'; active: boolean };
