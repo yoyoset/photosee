@@ -7,6 +7,7 @@
 // `type=password` (not shown over a shoulder on the shared PC).
 
 import { ApiError, type Api } from './api';
+import { failText } from './dialog';
 import { t } from './i18n';
 import './login.css';
 
@@ -57,8 +58,36 @@ export function showLogin(doc: Document, api: Api, names: readonly string[]): Pr
       root.replaceChildren(el(doc, 'h1', 'lg-title', name), form);
       pin.focus();
     };
-    pick();
+    if (names.length) pick();
+    else setup(doc, api, root, () => { root.remove(); done(); });
   });
+}
+
+/** First run: no accounts yet, so the first visitor creates the admin. The
+ * server refuses this as soon as one account exists. */
+function setup(doc: Document, api: Api, root: HTMLElement, done: () => void): void {
+  const form = el(doc, 'form', 'lg-form');
+  const name = el(doc, 'input', 'lg-pin lg-text');
+  Object.assign(name, { required: true, maxLength: 32, autocomplete: 'off', placeholder: t('login.name') });
+  name.setAttribute('aria-label', t('login.name'));
+  const pin = el(doc, 'input', 'lg-pin');
+  Object.assign(pin, { type: 'password', inputMode: 'numeric', autocomplete: 'off', required: true, maxLength: 12, placeholder: t('login.pin') });
+  pin.setAttribute('aria-label', t('login.pin'));
+  const msg = el(doc, 'p', 'lg-msg');
+  msg.setAttribute('role', 'alert');
+  const go = el(doc, 'button', 'lg-go', t('login.go'));
+  go.type = 'submit';
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    go.disabled = true;
+    api.setup(name.value.trim(), pin.value).then(done, (err: unknown) => {
+      go.disabled = false;
+      msg.textContent = failText(err);
+    });
+  });
+  form.append(name, pin, go, msg);
+  root.replaceChildren(el(doc, 'h1', 'lg-title', t('login.setup')), form);
+  name.focus();
 }
 
 /** The server's lockout message starts with "too many"; anything that is not

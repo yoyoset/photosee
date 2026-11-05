@@ -22,7 +22,8 @@ import { sortListing } from './browser-sort';
 import { loadUiState, UiPrefs, type UiState } from './uistate';
 import type { ViewerOptions } from './viewer';
 import { showLogin } from './login';
-import { mountUserSwitch, recordReading, resumeReading, resumes } from './resume';
+import { recordReading, resumeReading, resumes } from './resume';
+import { mountAccount } from './account';
 
 export interface BootDeps {
   api?: Api;
@@ -108,7 +109,7 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   win.addEventListener('pagehide', () => void prefs.flush());
   const offRecord = resumes(session) ? recordReading(store, prefs) : () => {};
   if (session.user) {
-    mountUserSwitch(mounted.modes.browser().toolbar.el, session.user, () => api.logout(), () => win.location.reload());
+    mountAccount(mounted.modes.browser().toolbar.el, { doc, api, session, reload: () => win.location.reload() });
   }
   return {
     ctx, controller, prefs, modes: mounted.modes,

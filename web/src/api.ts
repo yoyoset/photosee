@@ -43,7 +43,13 @@ export interface Session {
   roots: Place[];
   /** Multi-user server: who is logged in. Absent or null otherwise. */
   user?: string | null;
+  /** Multi-user server: this account may create and delete accounts. */
+  admin?: boolean;
 }
+
+/** A folder in the "add folder" picker: volume paths, folders only. */
+export interface VolumeListing { dir: string; parent: string | null; dirs: { name: string; path: string }[] }
+export interface AccountRow { name: string; admin: boolean; folders: number }
 
 export interface ExifSummary {
   camera: string | null;
@@ -174,6 +180,36 @@ export class Api {
   }
   async logout(): Promise<void> {
     await call(`${this.base}/logout`, { method: 'POST' });
+  }
+  /** First run only: creates the admin and logs in. */
+  async setup(name: string, pin: string): Promise<void> {
+    await this.post('/setup', { name, pin });
+  }
+  volumes(dir = '/'): Promise<VolumeListing> {
+    return call(`${this.base}/volumes?p=${q(dir)}`);
+  }
+  async mount(path: string): Promise<void> {
+    await this.post('/library/add', { path });
+  }
+  async unmount(root: string): Promise<void> {
+    await this.post('/library/remove', { root });
+  }
+  accounts(): Promise<AccountRow[]> {
+    return call(`${this.base}/admin/users`);
+  }
+  async createAccount(name: string, pin: string): Promise<void> {
+    await this.post('/admin/users', { name, pin });
+  }
+  async resetPin(name: string, pin: string): Promise<void> {
+    await this.post('/admin/users/pin', { name, pin });
+  }
+  async deleteAccount(name: string): Promise<void> {
+    await this.post('/admin/users/remove', { name });
+  }
+  private post(path: string, body: unknown): Promise<unknown> {
+    return call(`${this.base}${path}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    });
   }
   config(): Promise<Settings> {
     return call(`${this.base}/config`);

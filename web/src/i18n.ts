@@ -3,6 +3,8 @@
 // Add a key here (both languages) before using it; `en` is typed against the
 // `zh` keys, so tsc fails on a key that exists in only one language.
 
+import { EN_ACCOUNT, ZH_ACCOUNT } from './i18n-account';
+
 export type Lang = 'zh' | 'en';
 
 export function systemLang(navLang: string): Lang {
@@ -21,13 +23,7 @@ const zh = {
   'btn.fullscreen': '全屏',
   'btn.settings': '设置',
   'btn.back': '返回浏览',
-  'login.who': '谁在看？',
-  'login.pin': 'PIN 码',
-  'login.go': '进入',
-  'login.other': '换个人',
-  'login.wrong': 'PIN 不对',
-  'login.locked': '错太多次了，请一分钟后再试',
-  'login.switch': '切换用户（现在是 {name}）',
+  ...ZH_ACCOUNT,
   'err.unauthorized': '需要重新登录',
   'live.position': '{n} / {total}，{name}',
   'hint.first': '已是第一张',
@@ -142,13 +138,7 @@ const en: Record<Key, string> = {
   'btn.fullscreen': 'Fullscreen',
   'btn.settings': 'Settings',
   'btn.back': 'Back to folders',
-  'login.who': "Who's reading?",
-  'login.pin': 'PIN',
-  'login.go': 'Enter',
-  'login.other': 'Someone else',
-  'login.wrong': 'Wrong PIN',
-  'login.locked': 'Too many wrong PINs; try again in a minute',
-  'login.switch': 'Switch user (now {name})',
+  ...EN_ACCOUNT,
   'err.unauthorized': 'Please log in again',
   'live.position': '{n} of {total}, {name}',
   'hint.first': 'First image',

@@ -6,9 +6,7 @@
 // Desktop does not record or resume: it starts from what was double-clicked.
 
 import type { Session } from './api';
-import { icon } from './browser-icons';
 import type { BrowserNav } from './browser-nav';
-import { t } from './i18n';
 import type { Store } from './state';
 import type { UiPrefs } from './uistate';
 import { FIT } from './zoom';
@@ -34,18 +32,4 @@ export async function resumeReading(store: Store, prefs: UiPrefs, nav: BrowserNa
   // One set(): the viewer mounts on the mode change and must already see the index.
   if (i >= 0) store.set({ index: i, zoom: FIT, rotation: 0, mode: 'viewer' });
   return store.get().listing !== null;
-}
-
-/** "Switch user" at the end of the browser toolbar: log out, start over. */
-export function mountUserSwitch(toolbar: HTMLElement, name: string, logout: () => Promise<void>, reload: () => void): void {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'tb wide tb-user';
-  b.title = t('login.switch', { name });
-  b.setAttribute('aria-label', b.title);
-  b.append(icon('user'), Object.assign(document.createElement('span'), { textContent: name }));
-  // A failed logout (server gone) still reloads: the login screen or the
-  // connection error then says what is wrong, instead of a dead button.
-  b.addEventListener('click', () => void logout().catch(() => {}).finally(reload));
-  toolbar.append(b);
 }

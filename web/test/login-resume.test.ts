@@ -91,11 +91,14 @@ describe('login screen', () => {
     expect(loginError(new ApiError('network', 'x'))).toBe(t('err.network'));
   });
 
-  it('Switch user logs out', async () => {
+  it('the account menu offers My folders and Switch user; Switch user logs out', async () => {
     const s = setup();
     app = await s.run();
     await app.started;
     (document.querySelector('.tb-user') as HTMLElement).click();
+    const items = [...document.querySelectorAll<HTMLElement>('.br-menu-item')];
+    expect(items.map((i) => i.textContent)).toEqual([t('acct.folders'), t('acct.switch')]); // not an admin
+    items[1]?.click();
     await flush();
     expect(s.api.logout).toHaveBeenCalled();
   });

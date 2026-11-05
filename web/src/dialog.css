@@ -1,0 +1,43 @@
+/* Account dialogs (dialog.ts, folders.ts, admin.ts). The browser's greys;
+ * full width with a 16 px gutter on a phone, 440 px on a desktop. */
+.dlg-scrim {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-start; justify-content: center;
+  padding: 48px 16px 16px; background: rgb(0 0 0 / 0.55); overflow-y: auto;
+}
+.dlg {
+  width: min(440px, 100%); background: #181818; color: #e6e6e6; border: 1px solid #2a2a2a;
+  border-radius: 4px; font: 14px/1.4 var(--font);
+}
+.dlg-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #2a2a2a; }
+.dlg-title { flex: 1; margin: 0; font-size: 16px; font-weight: 500; }
+.dlg-x { width: 36px; height: 36px; font-size: 20px; background: none; color: #9a9a9a; border: 0; border-radius: 2px; cursor: pointer; }
+.dlg-x:hover { background: #262626; color: #fff; }
+.dlg-body { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.dlg-row { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.dlg-row > .dlg-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlg-dim { color: #9a9a9a; font-size: 12px; }
+.dlg-btn {
+  flex: none; min-height: 36px; padding: 0 12px; font: inherit; cursor: pointer;
+  background: #1e1e1e; color: #e6e6e6; border: 1px solid #2a2a2a; border-radius: 2px;
+}
+.dlg-btn:hover:not(:disabled) { background: #262626; }
+.dlg-btn:disabled { opacity: 0.45; cursor: default; }
+.dlg-btn.primary { background: #25364d; color: #fff; border-color: var(--accent); }
+.dlg-btn.quiet { background: none; border-color: transparent; color: #9a9a9a; }
+.dlg-btn.danger { color: #ffb4b4; }
+.dlg-in {
+  flex: 1; min-width: 0; height: 36px; padding: 0 8px; font: inherit;
+  background: #121212; color: #e6e6e6; border: 1px solid #2a2a2a; border-radius: 2px;
+}
+.dlg-in:focus { border-color: var(--accent); outline: none; }
+.dlg-err { margin: 0; color: #ffb4b4; }
+.dlg-err:empty { display: none; }
+.dlg-path { padding: 6px 8px; background: #121212; border: 1px solid #2a2a2a; border-radius: 2px; word-break: break-all; }
+.dlg-list { display: flex; flex-direction: column; max-height: 50vh; overflow-y: auto; border: 1px solid #2a2a2a; border-radius: 2px; }
+.dlg-item {
+  display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; text-align: left;
+  font: inherit; background: none; color: #e6e6e6; border: 0; border-bottom: 1px solid #222; cursor: pointer;
+}
+.dlg-item:hover { background: #262626; }
+.dlg-item .ic { flex: none; color: #9a9a9a; }
+.dlg-tag { margin-left: 6px; padding: 0 5px; font-size: 11px; color: #6aa9ff; border: 1px solid #2f4a6b; border-radius: 2px; }

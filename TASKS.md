@@ -150,7 +150,7 @@ cold start only.
 | sweep of every .cbz on 13 | measured | full pass (every page) over 10 Comics volumes + a manga series v01-v06: all 200. Then every 10th page of all 32 archives: 778/778 200. a manga series (2100x3181 JPEG -> 1920x1080 box) about 0.45 s per page sequentially from Windows over the LAN; not profiled (musl allocator is a suspect) |
 | phone layout of the browser | done | tree is a drawer at <= 640 px (was a 187-220 px column leaving 1 thumbnail column at 375 px; now 2), tap opens, 36 px touch rows. Checked on 13 at 375x812 |
 | UI cache headers | done | index.html `no-cache`, /assets/* immutable. Without them the pane kept the old UI after a redeploy |
-| multi-user accounts | done | `PHOTOSEE_USERS` users.json: name + PIN, own roots, own ui-state/settings, isolation per `AppState`. Checked on 13 with a throw-away container on :8112: no cookie 401, other user's root 404, `../` 403, sessions.json survives restart |
+| multi-user accounts | done | `PHOTOSEE_USERS` users.json: name + PIN, own ui-state/settings, isolation per `AppState`. 11-06 reworked on the user's request: first-run admin, admin creates accounts in the UI, every reader mounts their own folders from the volumes (nobody starts with whole disks). 12 server tests, 6 web tests |
 | resume last page | done | `reading {dir,file}` in each user's ui-state; server mode only |
 
 Not done: CBR (6 files on 13 stay invisible), .cbz folders show a plain folder icon instead of a cover.
