@@ -1,0 +1,29 @@
+/* Login screen (login.ts). Same dark greys as the browser; big targets,
+ * because it is mostly used on phones and by a child. */
+.lg {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px; padding: 24px 16px;
+  background: #121212; color: #e6e6e6; font: 15px/1.4 var(--font);
+}
+.lg-title { margin: 0; font-size: 22px; font-weight: 500; }
+.lg-names { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 480px; }
+.lg-name, .lg-go, .lg-other, .lg-pin { font: inherit; border-radius: 4px; }
+.lg-name {
+  min-width: 120px; min-height: 56px; padding: 0 20px;
+  background: #1e1e1e; color: #e6e6e6; border: 1px solid #2a2a2a; cursor: pointer;
+}
+.lg-name:hover, .lg-name:focus-visible { background: #25364d; border-color: var(--accent); outline: none; }
+.lg-form { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(280px, 100%); }
+.lg-pin {
+  height: 48px; padding: 0 12px; text-align: center; font-size: 22px; letter-spacing: 0.3em;
+  background: #181818; color: #e6e6e6; border: 1px solid #2a2a2a;
+}
+.lg-pin:focus { border-color: var(--accent); outline: none; }
+.lg-go { height: 48px; background: #25364d; color: #fff; border: 1px solid var(--accent); cursor: pointer; }
+.lg-go:disabled { opacity: 0.5; }
+.lg-other { height: 40px; background: none; color: #9a9a9a; border: 0; cursor: pointer; }
+.lg-msg { min-height: 1.4em; margin: 0; text-align: center; color: #ffb4b4; }
+
+/* "Switch user" in the browser toolbar (user-switch.ts). */
+.tb.tb-user { margin-left: auto; max-width: 140px; }
+.tb.tb-user span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

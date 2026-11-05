@@ -104,7 +104,8 @@ tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && 
 - macOS/Linux 外壳没做（`places()` 在非 Windows 上返回空）。
 - `dev.photosee.app` 这个 identifier 以 `.app` 结尾，Tauri 会警告（和 macOS bundle 冲突），Windows 上没影响。
 
-- **Docker 服务端没有登录**：web UI 还没有密码页，所以设了 `PHOTOSEE_PASSWORD` 会拒绝启动，防止用户以为有保护。现在只靠 LAN 和 `PHOTOSEE_HOSTS` 白名单（防 DNS rebinding），并且全程只读。
+- **Docker 多用户（2026-11-05）**：设 `PHOTOSEE_USERS=/data/users.json` 后，每个人用「名字 + PIN」登录，只能看到分给自己的根目录，最近列表、设置和上次看到的页（`reading`）也各自分开。隔离在服务端做：每个用户有自己的 `AppState`，见 `server/src/accounts.rs`、`multi.rs`。登录一直有效，直到点「切换用户」；登录状态存在 `data/sessions.json`，重新部署不会掉线。PIN 明文存在 users.json 里（理由见 accounts.rs 头注释），连错 5 次锁 60 秒。不设 `PHOTOSEE_USERS` 时就是原来的开放模式（`PHOTOSEE_ROOTS`）。`PHOTOSEE_PASSWORD` 仍然会拒绝启动。
+- 还没做：会话中途被登出（比如 users.json 删了这个人）时，页面不会自动跳到登录页，要刷新一次才会出现。
 - Docker 镜像用 musl 的默认内存分配器，多线程转码可能比 glibc 慢，没有专门对比测过。13 上 1920×1080 转码实测约 190 ms。
 - `.cbz` 的限制见 `docs/non-goals.md`：不支持 CBR/CB7/ZIP64，GBK 文件名会显示成乱码，安装包没把 .cbz 加进「打开方式」。
 

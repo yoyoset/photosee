@@ -25,6 +25,8 @@ export interface UiState {
   last: string | null;
   /** Stop adding opened folders to Recent (existing entries stay). */
   recentPaused: boolean;
+  /** Multi-user server: the page last on screen in the viewer (resume.ts). */
+  reading: { dir: string; file: string } | null;
   [unknown: string]: unknown;
 }
 
@@ -39,7 +41,7 @@ export function defaultUiState(): UiState {
   return {
     version: 1, tree: { visible: true, width: TREE_DEFAULT_PX }, view: 'grid',
     sort: { key: 'name', dir: 'asc' }, thumb: THUMB_DEFAULT_PX, names: true,
-    recent: [], network: [], last: null, recentPaused: false,
+    recent: [], network: [], last: null, recentPaused: false, reading: null,
   };
 }
 
@@ -64,7 +66,14 @@ export function parseUiState(raw: unknown): UiState {
     network: strings(raw['network'], LIST_MAX),
     last: typeof last === 'string' && last !== '' ? last : null,
     recentPaused: raw['recentPaused'] === true,
+    reading: parseReading(raw['reading']),
   };
+}
+
+function parseReading(v: unknown): UiState['reading'] {
+  if (!isObj(v)) return null;
+  const { dir, file } = v;
+  return typeof dir === 'string' && dir !== '' && typeof file === 'string' && file !== '' ? { dir, file } : null;
 }
 
 /** Newest first, no duplicates (by path), capped. */

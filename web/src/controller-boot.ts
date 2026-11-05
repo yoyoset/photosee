@@ -2,7 +2,7 @@
 // Kept out of main.ts so tests can run it against a fake Api and a jsdom body.
 
 import type { Action } from './actions';
-import { Api, HttpImageSource, type ImageSource, type Listing, type Session, type Settings } from './api';
+import { Api, ApiError, HttpImageSource, type ImageSource, type Listing, type Session, type Settings } from './api';
 import { HINT_TOAST_MS } from './constants';
 import { createController, type Controller, type Parts } from './controller';
 import type { PanelHandle } from './help';
@@ -21,6 +21,8 @@ import { EscStack, Store } from './state';
 import { sortListing } from './browser-sort';
 import { loadUiState, UiPrefs, type UiState } from './uistate';
 import type { ViewerOptions } from './viewer';
+import { showLogin } from './login';
+import { mountUserSwitch, recordReading, resumeReading, resumes } from './resume';
 
 export interface BootDeps {
   api?: Api;
@@ -79,6 +81,11 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   try {
     [session, settings, ui] = await loadSession(api);
   } catch (err) {
+    if (err instanceof ApiError && err.code === 'unauthorized') {
+      // Multi-user server, nobody logged in on this device: log in, start over.
+      await showLogin(doc, api, await api.users());
+      return boot(deps);
+    }
     const dismiss = showNasBanner(doc.body, '/api', () => { dismiss(); void boot(deps); }, 'io');
     throw err;
   }
@@ -99,10 +106,14 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   const controller = createController(() => ctx, () => mounted.parts);
   const mounted = mountAll(ctx, controller, prefs, host, doc, win, deps.viewer);
   win.addEventListener('pagehide', () => void prefs.flush());
+  const offRecord = resumes(session) ? recordReading(store, prefs) : () => {};
+  if (session.user) {
+    mountUserSwitch(mounted.modes.browser().toolbar.el, session.user, () => api.logout(), () => win.location.reload());
+  }
   return {
     ctx, controller, prefs, modes: mounted.modes,
     started: start(ctx, controller, mounted.parts, mounted.modes, prefs),
-    dispose() { mounted.dispose(); prefs.dispose(); },
+    dispose() { offRecord(); mounted.dispose(); prefs.dispose(); },
   };
 }
 
@@ -144,6 +155,7 @@ function mountAll(
  * because an empty browser with the tree is a fine place to land. */
 async function startBrowser(ctx: Ctx, modes: Modes, prefs: UiPrefs): Promise<void> {
   const { nav } = modes.browser();
+  if (resumes(ctx.session) && (await resumeReading(ctx.store, prefs, nav))) return;
   const roots = ctx.session.roots;
   const pictures = roots.find((r) => r.kind === 'folder' && r.name.toLowerCase() === 'pictures');
   const tries = [prefs.get().last, pictures?.path, roots[0]?.path];

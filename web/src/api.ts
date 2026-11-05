@@ -41,6 +41,8 @@ export interface Session {
   /** Top-level places for the browser: Docker roots, or on desktop known
    * folders (`folder`, name is a stable key like "Pictures") and drives. */
   roots: Place[];
+  /** Multi-user server: who is logged in. Absent or null otherwise. */
+  user?: string | null;
 }
 
 export interface ExifSummary {
@@ -76,7 +78,7 @@ export interface Settings {
 
 export type ErrorCode =
   | 'not_found' | 'forbidden' | 'unsupported' | 'missing_codec'
-  | 'corrupt' | 'too_large' | 'timeout' | 'io' | 'network';
+  | 'corrupt' | 'too_large' | 'timeout' | 'io' | 'network' | 'unauthorized';
 
 export class ApiError extends Error {
   constructor(
@@ -159,6 +161,19 @@ export class Api {
       throw new ApiError('network', String(e));
     });
     if (!res.ok) throw new ApiError('io', `HTTP ${res.status}`);
+  }
+  /** Multi-user server: account names for the login screen (no session needed). */
+  users(): Promise<string[]> {
+    return call(`${this.base}/users`);
+  }
+  /** Sets the session cookie; rejects with `unauthorized` on a wrong PIN or lockout. */
+  async login(name: string, pin: string): Promise<void> {
+    await call(`${this.base}/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, pin }),
+    });
+  }
+  async logout(): Promise<void> {
+    await call(`${this.base}/logout`, { method: 'POST' });
   }
   config(): Promise<Settings> {
     return call(`${this.base}/config`);
