@@ -194,8 +194,12 @@ fn jpeg_until(r: &mut RangeReader, stop: impl Fn(u8) -> bool) -> Result<u8> {
         return Err(Error::corrupt("JPEG: missing SOI"));
     }
     loop {
-        if read_n::<1>(r)?[0] != 0xFF {
-            return Err(Error::corrupt("JPEG: lost marker sync"));
+        // libjpeg skips stray bytes before a marker with a warning; a comic
+        // scan had a 0x0A after its COM segment. Bounded so garbage fails.
+        let lost = || Error::corrupt("JPEG: lost marker sync");
+        let mut stray = 0..4096;
+        while read_n::<1>(r)?[0] != 0xFF {
+            stray.next().ok_or_else(lost)?;
         }
         // Markers may be padded with any number of 0xFF fill bytes.
         let mut m = 0xFF;
