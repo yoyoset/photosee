@@ -148,5 +148,7 @@ cold start only.
 | standalone server + Docker | done | 2b04dbc. musl static binary, `FROM scratch`, 8.75 MB; 13:$DEPLOY_DIR, port 8111, roots /mnt/disk1 and /mnt/disk2 read-only; homepage card in 「影音与相册」 |
 | back button / system Back in viewer | done | 5d7637b. Reported by the user: without a keyboard only Esc left the viewer |
 | sweep of every .cbz on 13 | measured | full pass (every page) over 10 Comics volumes + a manga series v01-v06: all 200. Then every 10th page of all 32 archives: 778/778 200. a manga series (2100x3181 JPEG -> 1920x1080 box) about 0.45 s per page sequentially from Windows over the LAN; not profiled (musl allocator is a suspect) |
+| phone layout of the browser | done | tree is a drawer at <= 640 px (was a 187-220 px column leaving 1 thumbnail column at 375 px; now 2), tap opens, 36 px touch rows. Checked on 13 at 375x812 |
+| UI cache headers | done | index.html `no-cache`, /assets/* immutable. Without them the pane kept the old UI after a redeploy |
 
-Not done: CBR (6 files on 13 stay invisible), login for the Docker build, phone layout of the browser (the tree takes about half of a 375 px screen).
+Not done: CBR (6 files on 13 stay invisible), login for the Docker build, .cbz folders show a plain folder icon instead of a cover.

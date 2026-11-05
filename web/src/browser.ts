@@ -11,6 +11,7 @@ import type { Listing } from './api';
 import { ContentHost, type ContentDeps } from './browser-content';
 import { itemsOf, type BrowserItem } from './browser-items';
 import { buildSkeleton } from './browser-layout';
+import { onWindowResize, type TreeDrawer } from './browser-drawer';
 import { Toolbar } from './browser-toolbar';
 import { BrowserNav } from './browser-nav';
 import { bindBrowserKeys } from './browser-keys';
@@ -60,14 +61,14 @@ class BrowserImpl implements Browser {
   readonly tree: TreeView;
   readonly toolbar: Toolbar;
   private readonly model: TreeModel;
-  private readonly tree$: HTMLElement;
-  private readonly split: HTMLElement;
+  private readonly drawer: TreeDrawer;
   private readonly empty: HTMLElement;
   private readonly statusL: HTMLElement;
   private readonly statusR: HTMLElement;
   private readonly offs: (() => void)[] = [];
   private listing: Listing | null = null;
   private active = false;
+  private treeShown = true;
   private prev: UiState;
 
   constructor(private readonly d: BrowserDeps) {
@@ -77,7 +78,7 @@ class BrowserImpl implements Browser {
     this.model = new TreeModel(ctx.session.roots, (dir) => ctx.api.list(dir));
     this.syncLists();
     this.tree = new TreeView(this.model, {
-      open: (p) => void this.nav.go(p),
+      open: (p) => { this.drawer.close(); void this.nav.go(p); },
       remove: (n) => prefs.set(n.section === 'recent'
         ? { recent: prefs.get().recent.filter((x) => x !== n.path) }
         : { network: prefs.get().network.filter((x) => x !== n.path) }),
@@ -88,12 +89,13 @@ class BrowserImpl implements Browser {
     this.content = new ContentHost(this.contentActions());
     this.toolbar = this.buildToolbar();
     const sk = buildSkeleton(d.root, this.toolbar.el, this.tree.el, this.content.el);
-    ({ tree$: this.tree$, split: this.split, empty: this.empty, statusL: this.statusL, statusR: this.statusR } = sk);
+    ({ drawer: this.drawer, empty: this.empty, statusL: this.statusL, statusR: this.statusR } = sk);
+    this.drawer.onChange = () => { this.applyLayoutPrefs(); this.syncToolbar(); };
     this.offs.push(
       ctx.store.subscribe((s, p) => this.onStore(s, p)),
       prefs.subscribe((p) => this.onPrefs(p)),
-      mountSplitter(this.split, () => this.treeWidth(), (w) => this.setTreeWidth(w), () => window.innerWidth),
-      onWindowResize(() => this.applyLayoutPrefs()),
+      mountSplitter(this.drawer.split, () => this.treeWidth(), (w) => this.setTreeWidth(w), () => window.innerWidth),
+      onWindowResize(() => this.drawer.onChange()), // crossing the narrow width changes the tree button too
     );
     this.nav.onChanged = () => this.syncToolbar();
     this.offs.push(bindBrowserKeys(d.root.ownerDocument.defaultView ?? window, {
@@ -132,7 +134,8 @@ class BrowserImpl implements Browser {
     const pick = host.pickFolder ? { pick: () => void this.pick() } : {};
     return new Toolbar({
       ...pick,
-      toggleTree: () => prefs.set({ tree: { ...prefs.get().tree, visible: !prefs.get().tree.visible } }),
+      toggleTree: () => (this.drawer.isNarrow ? this.drawer.toggle()
+        : prefs.set({ tree: { ...prefs.get().tree, visible: !prefs.get().tree.visible } })),
       back: () => void this.nav.back(),
       forward: () => void this.nav.forward(),
       up: () => void this.nav.up(),
@@ -248,9 +251,8 @@ class BrowserImpl implements Browser {
   }
 
   private applyLayoutPrefs(): void {
-    const { tree } = this.d.prefs.get();
     this.d.root.style.setProperty('--tree-w', `${this.treeWidth()}px`);
-    this.tree$.hidden = this.split.hidden = !tree.visible;
+    this.treeShown = this.drawer.apply(this.d.root, window.innerWidth, this.d.prefs.get().tree.visible);
   }
 
   /** The stored width, limited to half of the window right now. The stored
@@ -271,7 +273,8 @@ class BrowserImpl implements Browser {
   }
 
   private syncToolbar(): void {
-    this.toolbar.sync(this.d.prefs.get(), {
+    const p = this.d.prefs.get();
+    this.toolbar.sync({ ...p, tree: { ...p.tree, visible: this.treeShown } }, {
       canBack: this.nav.history.canBack, canForward: this.nav.history.canForward, canUp: this.nav.canUp,
     });
   }
@@ -288,11 +291,6 @@ class BrowserImpl implements Browser {
     this.d.root.replaceChildren();
     this.d.root.classList.remove('br');
   }
-}
-
-function onWindowResize(f: () => void): () => void {
-  window.addEventListener('resize', f);
-  return () => window.removeEventListener('resize', f);
 }
 
 export function mountBrowser(deps: BrowserDeps): Browser {

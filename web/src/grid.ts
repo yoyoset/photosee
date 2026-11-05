@@ -8,6 +8,7 @@ import { icon } from './browser-icons';
 import { splitMiddle, type BrowserItem } from './browser-items';
 import { gridLayout, thumbRequest } from './grid-geometry';
 import { VirtualView } from './grid-virtual';
+import { bindTapOpen } from './touch-tap';
 
 /** What the browser needs from either content view. */
 export interface ContentView {
@@ -88,8 +89,7 @@ export class GridView implements ContentView {
     el.classList.add('grid');
     el.setAttribute('role', 'listbox');
     this.applyVars();
-    el.addEventListener('click', (e) => this.hit(e, hooks.select));
-    el.addEventListener('dblclick', (e) => this.hit(e, hooks.open));
+    bindTapOpen(el, (e) => this.hit(e, hooks.select), (e) => this.hit(e, hooks.open));
     bindMenu(el, (t) => this.view.indexAt(t), hooks);
     el.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     // 'error' does not bubble: one capture listener instead of one per image.

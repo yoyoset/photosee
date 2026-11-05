@@ -9,10 +9,14 @@ export const TREE_MAX_FRACTION = 0.5;
 /** Only bounds a corrupt ui-state file; the real limit is the window. */
 export const TREE_STORED_MAX_PX = 4096;
 /** Recent shows this many rows and scrolls beyond that, so the sections
- * below it never move as the list grows. TREE_ROW_PX matches `.tr-row`. */
+ * below it never move as the list grows. The row height is CSS (`--tr-row`):
+ * 24 px for a mouse, taller for a finger. */
 export const RECENT_VISIBLE_ROWS = 5;
-export const TREE_ROW_PX = 24;
 export const TREE_DEFAULT_PX = 220;
+/** At or below this window width the tree becomes a drawer over the files
+ * (browser-drawer.ts). Phones held upright are 360–430 px; tablets (768+)
+ * keep the column, where a 220 px tree still leaves room for the files. */
+export const NARROW_MAX_PX = 640;
 
 export const THUMB_MIN_PX = 64;
 export const THUMB_MAX_PX = 640;

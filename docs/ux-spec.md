@@ -88,6 +88,12 @@ Notes:
   turns the page only once the image edge is reached.
 - Single tap toggles the overlay, after `DOUBLE_TAP_MS` (300) to rule out a
   double tap. Double tap zooms. Pinch zooms around the midpoint.
+- Browser: a tap on a file or folder opens it (a mouse click only selects).
+  A second tap within `DOUBLE_TAP_MS` is ignored. Long-press opens the item
+  menu. Tree rows and toolbar buttons are 36 px under `pointer: coarse`.
+- Browser at or below `NARROW_MAX_PX` (640) wide: the tree is a drawer over
+  the files, closed by default. Picking a folder or tapping the dimmed area
+  closes it. Its state is per page, never the shared `tree.visible`.
 
 ## Settings (six, no more)
 1. Slideshow interval, 1–60 s (default 5)

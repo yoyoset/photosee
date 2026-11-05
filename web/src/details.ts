@@ -12,6 +12,7 @@ import { bindMenu, middleLabel, type ContentHooks, type ContentView } from './gr
 import { listLayout } from './grid-geometry';
 import { VirtualView } from './grid-virtual';
 import { t, type Key } from './i18n';
+import { bindTapOpen } from './touch-tap';
 
 export interface DetailsOpts {
   sort: { key: SortKey; dir: SortDir };
@@ -52,8 +53,7 @@ export class DetailsView implements ContentView {
     });
     this.view.el.classList.add('details');
     this.view.el.setAttribute('role', 'listbox');
-    this.view.el.addEventListener('click', (e) => this.hit(e, hooks.select));
-    this.view.el.addEventListener('dblclick', (e) => this.hit(e, hooks.open));
+    bindTapOpen(this.view.el, (e) => this.hit(e, hooks.select), (e) => this.hit(e, hooks.open));
     bindMenu(this.view.el, (t) => this.view.indexAt(t), hooks);
     this.el.append(this.head, this.view.el);
     this.setSort(o.sort.key, o.sort.dir);

@@ -44,7 +44,7 @@ describe('recent box', () => {
     const s = setup({ recent: recents });
     app = await s.run();
     await app.started;
-    expect(box().style.height).toBe('120px'); // 5 rows x 24 px
+    expect(box().style.getPropertyValue('--rows')).toBe('5'); // x --tr-row in browser.css
     expect(box().style.overflowY).toBe('auto');
     expect(box().querySelectorAll('.tr-row').length).toBe(10);
     expect(box().nextElementSibling?.classList.contains('tr-head')).toBe(true); // Places starts right after it
@@ -56,12 +56,12 @@ describe('recent box', () => {
     app = await s.run();
     await app.started;
     await flush();
-    const before = [box().style.height, heads()];
+    const before = [box().style.getPropertyValue('--rows'), heads()];
     expect(box().querySelector('.tr-none')).not.toBeNull(); // placeholder, not a collapse
     app.prefs.set({ recentPaused: false });
     for (const p of recents) await app.modes.peekBrowser()?.nav.go(p);
     expect(box().querySelectorAll('.tr-row').length).toBe(9);
-    expect([box().style.height, heads()]).toEqual(before);
+    expect([box().style.getPropertyValue('--rows'), heads()]).toEqual(before);
     // The one thing between the two headers is the fixed box.
     const kids = [...document.querySelector('.tr')?.children ?? []];
     const i = kids.indexOf(box());

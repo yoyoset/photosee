@@ -1,7 +1,7 @@
 // The folder tree pane. TreeModel owns the data and the lazy loading; this
 // file draws it (a flat list of rows, indent by depth) and routes input.
 
-import { RECENT_VISIBLE_ROWS, TREE_ROW_PX } from './browser-consts';
+import { RECENT_VISIBLE_ROWS } from './browser-consts';
 import { icon } from './browser-icons';
 import { t } from './i18n';
 import { treeKey, type Row, type TreeKey, type TreeModel, type TreeNode } from './tree-model';
@@ -85,7 +85,7 @@ export class TreeView {
     const box = document.createElement('div');
     box.className = 'tr-recent';
     box.setAttribute('role', 'group');
-    box.style.height = `${RECENT_VISIBLE_ROWS * TREE_ROW_PX}px`;
+    box.style.setProperty('--rows', String(RECENT_VISIBLE_ROWS)); // height: browser.css
     box.style.overflowY = 'auto';
     return box;
   }
