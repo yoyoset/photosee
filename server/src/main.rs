@@ -1,23 +1,27 @@
 //! Standalone server (Docker / LAN). Configuration via environment:
-//!   PHOTOSEE_ROOTS     `name=dir;name2=dir2`, read-only roots (required)
+//!   PHOTOSEE_ROOTS     `name=dir;name2=dir2`, read-only roots, one open
+//!                      library for everyone on the LAN
+//!   PHOTOSEE_USERS     path of users.json instead: family accounts, each
+//!                      with a PIN and their own roots (accounts.rs, multi.rs)
 //!   PHOTOSEE_PORT      listen port (default 8080)
 //!   PHOTOSEE_HOSTS     `host:port,host2:port`, accepted Host headers
 //!                      (DNS-rebinding defence); empty = any
 //!   PHOTOSEE_DATA      settings and thumbnail cache dir (default ./data)
 //!   PHOTOSEE_WEB       built web UI dir (default ./web)
 //!
-//! There is no login yet: the web UI has no password screen, so
-//! PHOTOSEE_PASSWORD is refused at start-up instead of being silently
-//! ignored. The server is for a trusted LAN and only ever reads.
+//! PHOTOSEE_PASSWORD (one shared password) is refused at start-up instead of
+//! being silently ignored: accounts replaced it. The server only ever reads.
 
 use photosee_core::archive::ArchiveFs;
 use photosee_core::io::LocalFs;
 use photosee_core::thumbcache::ThumbCache;
 use photosee_server::AppState;
+use photosee_server::accounts::{UserSpec, parse_users};
 use photosee_server::cache::ListingCache;
+use photosee_server::multi;
 use photosee_server::paths::{Policy, Root};
 use photosee_server::queue::IoQueue;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 /// Same figure as the desktop shell; a NAS gains nothing from more.
@@ -57,32 +61,81 @@ fn parse_roots(spec: &str) -> Result<Vec<Root>, String> {
     Ok(roots)
 }
 
-fn build_state(roots: Vec<Root>, data: &std::path::Path) -> AppState {
-    let hosts = env("PHOTOSEE_HOSTS").map_or_else(Vec::new, |h| {
+fn hosts() -> Vec<String> {
+    env("PHOTOSEE_HOSTS").map_or_else(Vec::new, |h| {
         h.split(',')
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty())
             .collect()
-    });
+    })
+}
+
+/// One library's state. `own` holds its settings and ui-state; the file
+/// system, IO queue and thumbnail cache are shared by every user.
+fn build_state(roots: Vec<Root>, own: &Path, shared: &AppState) -> AppState {
+    AppState {
+        policy: Arc::new(Policy::Roots(roots)),
+        listings: Arc::new(ListingCache::default()),
+        settings_path: own.join("settings.json"),
+        ..shared.clone()
+    }
+}
+
+fn shared_state(data: &Path) -> AppState {
     AppState {
         fs: Arc::new(ArchiveFs::new(LocalFs)),
-        policy: Arc::new(Policy::Roots(roots)),
+        policy: Arc::new(Policy::Roots(Vec::new())),
         listings: Arc::new(ListingCache::default()),
         queue: Arc::new(IoQueue::new(IO_SLOTS)),
         thumbs: Arc::new(ThumbCache::new(data.join("thumbs"), THUMB_BUDGET)),
         settings_path: data.join("settings.json"),
         token: None,
-        allowed_hosts: hosts,
+        allowed_hosts: hosts(),
         start: Arc::new(RwLock::new(None)),
         places: Vec::new(),
     }
 }
 
-async fn run() -> Result<(), String> {
-    if env("PHOTOSEE_PASSWORD").is_some() {
-        return Err("PHOTOSEE_PASSWORD is not supported yet (no login screen)".into());
+/// PHOTOSEE_USERS set: accounts. Else the open single library.
+fn app(data: &Path, web: PathBuf) -> Result<(axum::Router, String), String> {
+    let shared = shared_state(data);
+    if let Some(file) = env("PHOTOSEE_USERS") {
+        if env("PHOTOSEE_ROOTS").is_some() {
+            return Err("set PHOTOSEE_USERS or PHOTOSEE_ROOTS, not both".into());
+        }
+        let bytes = std::fs::read(&file).map_err(|e| format!("{file}: {e}"))?;
+        let users = parse_users(&bytes, Path::is_dir)?;
+        let names: Vec<&str> = users.iter().map(|u| u.name.as_str()).collect();
+        let what = format!("users {}", names.join(", "));
+        let make =
+            |u: &UserSpec| build_state(u.roots.clone(), &data.join("users").join(&u.name), &shared);
+        let r = multi::router(
+            &users,
+            data.join("sessions.json"),
+            shared.allowed_hosts.clone(),
+            web,
+            make,
+        );
+        return Ok((r, what));
     }
     let roots = parse_roots(&env("PHOTOSEE_ROOTS").unwrap_or_default())?;
+    let what = roots
+        .iter()
+        .map(|r| format!("{}={}", r.name, r.dir.display()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Ok((
+        photosee_server::router(build_state(roots, data, &shared), Some(web)),
+        format!("roots {what}"),
+    ))
+}
+
+async fn run() -> Result<(), String> {
+    if env("PHOTOSEE_PASSWORD").is_some() {
+        return Err(
+            "PHOTOSEE_PASSWORD is not supported; use PHOTOSEE_USERS (accounts with PINs)".into(),
+        );
+    }
     let port: u16 = env("PHOTOSEE_PORT")
         .map_or(Ok(8080), |p| p.parse())
         .map_err(|e| format!("PHOTOSEE_PORT: {e}"))?;
@@ -92,18 +145,11 @@ async fn run() -> Result<(), String> {
         return Err(format!("web UI not found: {}/index.html", web.display()));
     }
     std::fs::create_dir_all(&data).map_err(|e| format!("{}: {e}", data.display()))?;
-    let names: Vec<String> = roots
-        .iter()
-        .map(|r| format!("{}={}", r.name, r.dir.display()))
-        .collect();
-    let app = photosee_server::router(build_state(roots, &data), Some(web));
+    let (app, what) = app(&data, web)?;
     let listener = tokio::net::TcpListener::bind(("0.0.0.0", port))
         .await
         .map_err(|e| format!("cannot listen on port {port}: {e}"))?;
-    eprintln!(
-        "photosee-server: listening on :{port}, roots {}",
-        names.join(", ")
-    );
+    eprintln!("photosee-server: listening on :{port}, {what}");
     axum::serve(listener, app).await.map_err(|e| e.to_string())
 }
 

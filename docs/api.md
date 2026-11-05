@@ -14,6 +14,11 @@ is a contract change: the orchestrator does it in its own commit, bumps
   - Desktop (`mode: "desktop"`): the native absolute path, e.g. `C:\Photos\a.jpg`, `\\nas\share\b.jpg`.
   - Docker (`mode: "server"`): `/<root>/<relative>`, e.g. `/photos/2024/a.jpg`.
 - Query values are percent-encoded.
+- Multi-user Docker (`PHOTOSEE_USERS`): `POST /login` with `{name, pin}` sets an
+  HttpOnly, SameSite=Strict `ps_user` cookie for a year; `POST /logout` ends it.
+  Without it every `/api/v1/*` call except `/users`, `/login` and `/logout`
+  answers 401 `unauthorized`. Each user has their own roots, settings and
+  ui-state; a path outside their roots is refused like any other.
 - Auth: the desktop shell opens `/?t=<token>` once. The server answers
   `303` to `/` and sets the token as an HttpOnly, SameSite=Strict `ps_token`
   cookie, so it never stays in the URL or reaches page script. After that,
@@ -58,6 +63,15 @@ Start-up facts. Golden file: `contracts/session.json`.
     Pictures) and drives (`drive`, or `network` for mapped shares). They
     come from the OS without touching the disks, so a dead network drive
     cannot stall start-up.
+
+- `user`: the logged-in account on a multi-user server, else null.
+
+### GET /users, POST /login, POST /logout (multi-user server only)
+- `GET /users` → `["dad", "mum"]`, no session needed (the login screen's buttons).
+- `POST /login` `{"name": "dad", "pin": "1234"}` → `{"user": "dad"}` and the
+  cookie. Wrong name or PIN → 401 `unauthorized`. After 5 wrong PINs in a row
+  the name is locked for 60 s (401, message starts with "too many").
+- `POST /logout` → `{}`, clears the cookie.
 
 ### GET /list?p=DIR
 Images and subfolders of a directory. Both lists are naturally sorted

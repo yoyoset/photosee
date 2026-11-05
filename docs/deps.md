@@ -26,7 +26,7 @@ on 2026-11-03.
 | axum | 0.8.9 | HTTP server | |
 | tokio | 1.54.1 | async runtime, blocking pool for IO | |
 | tower-http | 0.7.1 | static file serving for the web UI | |
-| tower | 0.5.3 | `ServiceExt::oneshot` in server tests | dev only |
+| tower | 0.5.3 | `ServiceExt::oneshot`: the multi-user router forwards each request to its user's router; also server tests | already compiled as part of axum |
 | tokio-util | 0.7.20 | streaming file bodies | |
 | http-body-util | 0.1.5 | body helpers in tests and Range responses | |
 | futures-util | 0.3.34 | stream combinators for bodies | |
@@ -36,7 +36,7 @@ on 2026-11-03.
 | tauri | 2.12.x | desktop/mobile shell | added in M1 Wave 2; ≥2.12 for PR #16050 and CVE-2026-42184 |
 | tauri-build | 2.7.4 | build script of `app/` (embeds the config, icon, manifest) | the version the M0 spike used |
 | tauri-plugin-single-instance | 2.5.5 | second launch hands its path to the running instance (resident mode) | newest stable 2.x on crates.io (2026-10-28), needs tauri ^2.12. 3.0.0-alpha.* is for tauri 3 and an alpha, so not used. Pinned in `app/Cargo.toml`, not workspace-wide |
-| getrandom | 0.3.4 | OS randomness (BCryptGenRandom) for the 32-byte session token | already in the lockfile through tauri, so no new code is pulled in; pinned in `app/Cargo.toml` |
+| getrandom | 0.3.4 | OS randomness (BCryptGenRandom) for the 32-byte session token | already in the lockfile through tauri, so no new code is pulled in; workspace dep since 2026-11-05, the server uses it for login session tokens |
 | tauri-plugin-dialog | 2.8.4 | native folder picker behind `POST /api/v1/host/pick-folder` | newest stable 2.x (3.x is an alpha for tauri 3). Called from Rust only; the webview has no capability for its IPC commands. Pinned in `app/Cargo.toml` |
 | windows (app) | 0.62.2 | drives (GetLogicalDrives/GetDriveTypeW) and known folders (SHGetKnownFolderPath) for the browser tree, with no disk IO | workspace dependency; features Win32_Storage_FileSystem and Win32_UI_Shell added for it |
 

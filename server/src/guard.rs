@@ -113,7 +113,7 @@ fn bootstrap(path: &str, token: &str) -> Response {
     resp
 }
 
-fn add_security_headers(h: &mut HeaderMap) {
+pub fn add_security_headers(h: &mut HeaderMap) {
     h.insert(
         header::CONTENT_SECURITY_POLICY,
         HeaderValue::from_static(CSP),

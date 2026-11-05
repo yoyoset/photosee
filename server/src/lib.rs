@@ -1,9 +1,11 @@
 //! PhotoSee HTTP server: the single API used by the desktop shell (embedded,
 //! loopback only) and the Docker build. Contract: docs/api.md.
 
+pub mod accounts;
 pub mod cache;
 pub mod error;
 pub mod guard;
+pub mod multi;
 pub mod paths;
 pub mod queue;
 pub mod range;

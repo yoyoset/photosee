@@ -20,6 +20,8 @@ pub enum Codec {
 pub enum ErrorCode {
     NotFound,
     Forbidden,
+    /// Multi-user server: no session, or a wrong name/PIN.
+    Unauthorized,
     Unsupported,
     MissingCodec(Codec),
     Corrupt,
@@ -33,6 +35,7 @@ impl ErrorCode {
         match self {
             Self::NotFound => 404,
             Self::Forbidden => 403,
+            Self::Unauthorized => 401,
             Self::Unsupported | Self::MissingCodec(_) => 415,
             Self::Corrupt => 422,
             Self::TooLarge => 413,

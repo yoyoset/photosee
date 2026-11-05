@@ -3,5 +3,6 @@
   "mode": "server",
   "platform": "linux",
   "start": null,
-  "roots": [{ "name": "photos", "path": "/photos", "kind": "root" }]
+  "roots": [{ "name": "photos", "path": "/photos", "kind": "root" }],
+  "user": null
 }

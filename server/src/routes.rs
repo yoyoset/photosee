@@ -70,16 +70,21 @@ async fn ui_cache(req: Request, next: Next) -> Response {
     resp
 }
 
+/// The web UI as static files. index.html answers every unknown path with
+/// 200: the UI is a single page and may be opened at any address.
+pub fn ui_service(dir: PathBuf) -> Router {
+    let index = ServeFile::new(dir.join("index.html"));
+    Router::new()
+        .fallback_service(ServeDir::new(dir).fallback(index))
+        .layer(from_fn(ui_cache))
+}
+
 pub fn router(state: AppState, web_dir: Option<PathBuf>) -> Router {
     let mut app = Router::new().nest("/api/v1", api());
     if let Some(dir) = web_dir {
         // index.html answers every unknown path with 200: the UI is a
         // single page and may be opened at any address.
-        let index = ServeFile::new(dir.join("index.html"));
-        let ui = Router::new()
-            .fallback_service(ServeDir::new(dir).fallback(index))
-            .layer(from_fn(ui_cache));
-        app = app.fallback_service(ui);
+        app = app.fallback_service(ui_service(dir));
     }
     // Added last so the guard wraps the API, the static files and the
     // fallback alike.

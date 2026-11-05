@@ -20,10 +20,11 @@ futures-util.workspace = true
 mime_guess.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+tower.workspace = true
+getrandom.workspace = true
 
 [dev-dependencies]
 photosee-core = { workspace = true, features = ["testing"] }
-tower.workspace = true
 tempfile.workspace = true
 
 [lints]

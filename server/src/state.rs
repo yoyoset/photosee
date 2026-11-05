@@ -17,6 +17,11 @@ pub struct Place {
     pub kind: &'static str,
 }
 
+/// Multi-user mode: the logged-in user, put into the request extensions by
+/// the dispatcher (multi.rs). Absent in single-user and desktop mode.
+#[derive(Clone, Debug)]
+pub struct CurrentUser(pub String);
+
 #[derive(Clone)]
 pub struct AppState {
     pub fs: Arc<dyn FsBackend>,

@@ -14,6 +14,7 @@
 use photosee_core::{Error, ErrorCode, Result};
 use std::path::{Component, Path, PathBuf};
 
+#[derive(Clone)]
 pub struct Root {
     pub name: String,
     pub dir: PathBuf,

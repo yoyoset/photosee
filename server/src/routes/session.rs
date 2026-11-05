@@ -4,7 +4,8 @@ use super::http::{Reply, queued, require_dir};
 use crate::AppState;
 use crate::paths::Policy;
 use crate::queue::Priority;
-use crate::state::Place;
+use crate::state::{CurrentUser, Place};
+use axum::Extension;
 use axum::Json;
 use axum::extract::State;
 use axum::response::IntoResponse;
@@ -37,9 +38,11 @@ struct Session {
     start: Option<Start>,
     /// Top-level places for the browser (docs/api.md §session).
     roots: Vec<Place>,
+    /// Multi-user server: who is logged in (shows "Switch user"). Else null.
+    user: Option<String>,
 }
 
-pub async fn get(State(state): State<AppState>) -> Reply {
+pub async fn get(State(state): State<AppState>, user: Option<Extension<CurrentUser>>) -> Reply {
     // A poisoned lock only means a writer panicked; the value is still a path.
     let start_path = state
         .start
@@ -74,6 +77,7 @@ pub async fn get(State(state): State<AppState>) -> Reply {
         platform: PLATFORM,
         start,
         roots,
+        user: user.map(|Extension(u)| u.0),
     })
     .into_response())
 }

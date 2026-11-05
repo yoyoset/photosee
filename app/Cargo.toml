@@ -22,7 +22,7 @@ tauri = { version = "=2.12.5", features = ["custom-protocol", "tray-icon"] }
 # Newest stable 2.x (3.0.0-alpha.* targets tauri 3). Why exact: docs/deps.md.
 tauri-plugin-single-instance = "=2.5.5"
 # OS randomness for the session token (BCryptGenRandom on Windows).
-getrandom = "=0.3.4"
+getrandom.workspace = true
 # Native folder picker, called from Rust only (host route); the webview gets
 # no capability for it. Newest stable 2.x; 3.x is an alpha for tauri 3.
 tauri-plugin-dialog = "=2.8.4"
