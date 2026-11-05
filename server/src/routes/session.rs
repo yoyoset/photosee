@@ -40,6 +40,8 @@ struct Session {
     roots: Vec<Place>,
     /// Multi-user server: who is logged in (shows "Switch user"). Else null.
     user: Option<String>,
+    /// Multi-user server: show the account admin page.
+    admin: bool,
 }
 
 pub async fn get(State(state): State<AppState>, user: Option<Extension<CurrentUser>>) -> Reply {
@@ -77,7 +79,8 @@ pub async fn get(State(state): State<AppState>, user: Option<Extension<CurrentUs
         platform: PLATFORM,
         start,
         roots,
-        user: user.map(|Extension(u)| u.0),
+        admin: user.as_ref().is_some_and(|Extension(u)| u.admin),
+        user: user.map(|Extension(u)| u.name),
     })
     .into_response())
 }

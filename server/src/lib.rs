@@ -2,14 +2,17 @@
 //! loopback only) and the Docker build. Contract: docs/api.md.
 
 pub mod accounts;
+pub mod admin;
 pub mod cache;
 pub mod error;
 pub mod guard;
+pub mod library;
 pub mod multi;
 pub mod paths;
 pub mod queue;
 pub mod range;
 pub mod routes;
+pub mod sessions;
 pub mod state;
 
 pub use state::AppState;

@@ -16,9 +16,10 @@ is a contract change: the orchestrator does it in its own commit, bumps
 - Query values are percent-encoded.
 - Multi-user Docker (`PHOTOSEE_USERS`): `POST /login` with `{name, pin}` sets an
   HttpOnly, SameSite=Strict `ps_user` cookie for a year; `POST /logout` ends it.
-  Without it every `/api/v1/*` call except `/users`, `/login` and `/logout`
-  answers 401 `unauthorized`. Each user has their own roots, settings and
-  ui-state; a path outside their roots is refused like any other.
+  Without it every `/api/v1/*` call except `/users`, `/setup`, `/login` and
+  `/logout` answers 401 `unauthorized`. Each user's roots are the folders they
+  mounted themselves (picked from the volumes, `PHOTOSEE_ROOTS`); settings and
+  ui-state are per user too. A path outside their roots is refused like any other.
 - Auth: the desktop shell opens `/?t=<token>` once. The server answers
   `303` to `/` and sets the token as an HttpOnly, SameSite=Strict `ps_token`
   cookie, so it never stays in the URL or reaches page script. After that,
@@ -65,13 +66,30 @@ Start-up facts. Golden file: `contracts/session.json`.
     cannot stall start-up.
 
 - `user`: the logged-in account on a multi-user server, else null.
+- `admin`: that account may manage accounts (multi-user server), else false.
 
-### GET /users, POST /login, POST /logout (multi-user server only)
-- `GET /users` → `["dad", "mum"]`, no session needed (the login screen's buttons).
+### Accounts (multi-user server only; server/src/multi.rs, library.rs, admin.rs)
+- `GET /users` → `["dad", "mum"]`, no session needed (the login screen's
+  buttons). `[]` means first run.
+- `POST /setup` `{name, pin}`: first run only, creates the admin (no folders)
+  and logs in. 403 once any account exists.
 - `POST /login` `{"name": "dad", "pin": "1234"}` → `{"user": "dad"}` and the
   cookie. Wrong name or PIN → 401 `unauthorized`. After 5 wrong PINs in a row
   the name is locked for 60 s (401, message starts with "too many").
 - `POST /logout` → `{}`, clears the cookie.
+- `GET /volumes?p=DIR` → `{dir, parent, dirs: [{name, path}]}`: the "add
+  folder" picker, sub-folders only. `p` absent or `/` lists the volumes
+  (`parent: null`); a volume's parent is `/`. Paths are volume paths
+  (`/disk1/Comics`), valid only here and in `/library/add`.
+- `POST /library/add {path}`, `POST /library/remove {root}`: mount a picker
+  path; unmount by the root `name` from `/session`. Each user, for themselves.
+- Admin only (else 403): `GET /admin/users` → `[{name, admin, folders}]`;
+  `POST /admin/users {name, pin}` creates a reader with no folders;
+  `POST /admin/users/pin {name, pin}` resets a PIN and logs that user out;
+  `POST /admin/users/remove {name}` deletes (never yourself).
+- `users.json` (plain list, rewritten on every change):
+  `{"users":[{"name","pin","admin"?,"dirs":["/roots/disk1/Comics"]}]}`.
+  A mounted folder that no longer exists is skipped with a log line.
 
 ### GET /list?p=DIR
 Images and subfolders of a directory. Both lists are naturally sorted

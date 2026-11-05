@@ -1,8 +1,9 @@
 //! Standalone server (Docker / LAN). Configuration via environment:
 //!   PHOTOSEE_ROOTS     `name=dir;name2=dir2`, read-only roots, one open
 //!                      library for everyone on the LAN
-//!   PHOTOSEE_USERS     path of users.json instead: family accounts, each
-//!                      with a PIN and their own roots (accounts.rs, multi.rs)
+//!   PHOTOSEE_USERS     path of users.json: family accounts (name + PIN),
+//!                      each mounting their own folders from PHOTOSEE_ROOTS,
+//!                      which then become the volumes (accounts.rs, multi.rs)
 //!   PHOTOSEE_PORT      listen port (default 8080)
 //!   PHOTOSEE_HOSTS     `host:port,host2:port`, accepted Host headers
 //!                      (DNS-rebinding defence); empty = any
@@ -16,9 +17,8 @@ use photosee_core::archive::ArchiveFs;
 use photosee_core::io::LocalFs;
 use photosee_core::thumbcache::ThumbCache;
 use photosee_server::AppState;
-use photosee_server::accounts::{UserSpec, parse_users};
 use photosee_server::cache::ListingCache;
-use photosee_server::multi;
+use photosee_server::multi::{self, MakeState, Multi};
 use photosee_server::paths::{Policy, Root};
 use photosee_server::queue::IoQueue;
 use std::path::{Path, PathBuf};
@@ -96,38 +96,32 @@ fn shared_state(data: &Path) -> AppState {
     }
 }
 
-/// PHOTOSEE_USERS set: accounts. Else the open single library.
+/// PHOTOSEE_USERS set: accounts, and PHOTOSEE_ROOTS are the volumes each
+/// user picks their own folders from. Else PHOTOSEE_ROOTS is the open library.
 fn app(data: &Path, web: PathBuf) -> Result<(axum::Router, String), String> {
     let shared = shared_state(data);
-    if let Some(file) = env("PHOTOSEE_USERS") {
-        if env("PHOTOSEE_ROOTS").is_some() {
-            return Err("set PHOTOSEE_USERS or PHOTOSEE_ROOTS, not both".into());
-        }
-        let bytes = std::fs::read(&file).map_err(|e| format!("{file}: {e}"))?;
-        let users = parse_users(&bytes, Path::is_dir)?;
-        let names: Vec<&str> = users.iter().map(|u| u.name.as_str()).collect();
-        let what = format!("users {}", names.join(", "));
-        let make =
-            |u: &UserSpec| build_state(u.roots.clone(), &data.join("users").join(&u.name), &shared);
-        let r = multi::router(
-            &users,
-            data.join("sessions.json"),
-            shared.allowed_hosts.clone(),
-            web,
-            make,
-        );
-        return Ok((r, what));
-    }
     let roots = parse_roots(&env("PHOTOSEE_ROOTS").unwrap_or_default())?;
     let what = roots
         .iter()
         .map(|r| format!("{}={}", r.name, r.dir.display()))
         .collect::<Vec<_>>()
         .join(", ");
-    Ok((
-        photosee_server::router(build_state(roots, data, &shared), Some(web)),
-        format!("roots {what}"),
-    ))
+    let Some(file) = env("PHOTOSEE_USERS") else {
+        let app = photosee_server::router(build_state(roots, data, &shared), Some(web));
+        return Ok((app, format!("open library {what}")));
+    };
+    let base = data.to_path_buf();
+    let hosts = shared.allowed_hosts.clone();
+    let make: MakeState =
+        Box::new(move |name, roots| build_state(roots, &base.join("users").join(name), &shared));
+    let m = Multi::new(
+        PathBuf::from(file),
+        data.join("sessions.json"),
+        roots,
+        hosts,
+        make,
+    )?;
+    Ok((multi::router(m, web), format!("accounts, volumes {what}")))
 }
 
 async fn run() -> Result<(), String> {

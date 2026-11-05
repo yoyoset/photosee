@@ -4,5 +4,6 @@
   "platform": "linux",
   "start": null,
   "roots": [{ "name": "photos", "path": "/photos", "kind": "root" }],
-  "user": null
+  "user": null,
+  "admin": false
 }

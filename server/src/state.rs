@@ -20,7 +20,10 @@ pub struct Place {
 /// Multi-user mode: the logged-in user, put into the request extensions by
 /// the dispatcher (multi.rs). Absent in single-user and desktop mode.
 #[derive(Clone, Debug)]
-pub struct CurrentUser(pub String);
+pub struct CurrentUser {
+    pub name: String,
+    pub admin: bool,
+}
 
 #[derive(Clone)]
 pub struct AppState {
