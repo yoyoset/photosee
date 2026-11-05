@@ -125,3 +125,17 @@ the environment), so sonnet sub-agents stand in.
   left the help and info panels unassigned.
 - **AVIF is passthrough-only.** `image`'s `avif-native` needs a dav1d C build.
   It is recorded in docs/non-goals.md.
+
+## Release v0.1.0 (2026-11-05)
+| step | status | note |
+|---|---|---|
+| full gate | done | `check.ps1` green: Rust 247 passed / 9 ignored, web 466 passed, bundle 39923 B gzip |
+| package | done | installer 4.15 MiB, portable zip 5.84 MiB; zip name now carries the version (`PhotoSee-<ver>-portable.zip`) |
+| installer smoke (`app/nsis/smoke.mjs`) | done | all checks pass: HKCU-only install, OpenWithProgids only, registry identical after uninstall |
+| cold start, portable, 24 MP JPEG never seen before | measured | thumbnail 1.20-1.45 s, full 1.34-1.62 s (11 runs). Slower than W2-APP's 1.03-1.23 s; not investigated (different harness: portable copy, new file each run) |
+| README / LICENSE (MIT) / CHANGELOG / screenshots | done | screenshots from the portable build over CDP, synthetic landscapes on a subst drive so the tree shows no private folders |
+
+Known breakage: `node app/measure.mjs startup` assumes closing the window keeps the
+process alive. Since resident mode became opt-in (026ef01) the process exits and the
+script dies in `closeWindow`. Fix it by turning resident on for the run, or measure
+cold start only.
