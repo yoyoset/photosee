@@ -1,7 +1,7 @@
 # Builds the Windows installer (NSIS, per-user) and the portable zip, then
 # prints both sizes. Usage: powershell -File scripts/package.ps1
 # Output: target\release\bundle\nsis\PhotoSee_<ver>_x64-setup.exe
-#         target\release\bundle\PhotoSee-portable.zip
+#         target\release\bundle\PhotoSee-<ver>-portable.zip
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -63,7 +63,9 @@ Copy-Item -Recurse (Join-Path $root 'web\dist') (Join-Path $dir 'web')
 # The marker makes it "green": settings, thumbnails and the WebView2 profile
 # go to PhotoSee\data\, never to %LOCALAPPDATA% (app/src/serve.rs).
 Set-Content -Encoding ascii -Path (Join-Path $dir 'portable') -Value 'PhotoSee portable: data lives in .\data'
-$zip = Join-Path $bundle 'PhotoSee-portable.zip'
+# Versioned name so a Release can hold several and users can tell them apart.
+$ver = (Get-Content (Join-Path $root 'app\tauri.conf.json') -Raw | ConvertFrom-Json).version
+$zip = Join-Path $bundle "PhotoSee-$ver-portable.zip"
 if (Test-Path $zip) { Remove-Item -Force $zip }
 # bsdtar (shipped with Windows) writes forward-slash entry names;
 # Compress-Archive in Windows PowerShell 5.1 can write backslashes.
