@@ -2,6 +2,8 @@
 node_modules/
 /web/dist
 /fixtures-private
+# Home-network facts behind the $LAN_HOST / $DEPLOY_DIR placeholders
+/local
 /fixtures/generated/*
 !/fixtures/generated/.gitkeep
 /bench/local

@@ -36,6 +36,8 @@ node app/nsis/smoke.mjs                     # 安装包冒烟：静默装到 %TE
 cargo run --release --manifest-path tools/gen-fixtures/Cargo.toml   # 生成 fixtures/generated/（gitignored）
 ```
 
+> 仓库是公开的：服务器地址、部署目录、硬盘和书名都写成占位符（`$LAN_HOST`、`$DEPLOY_DIR`、`disk1`/`disk2`、"Comics"）。真实值在本机 `local/deploy.md`（gitignored）。部署前先在 git bash 里 `export` 那两个变量。**推送前用 `git log -p origin/main..main` 扫一遍，别把真实值写回来。**
+
 **Docker（LAN 服务端，2026-11-05 起部署在 $LAN_HOST:8111）：**
 ```bash
 bash scripts/docker-stage.sh   # 本机交叉编译 musl 静态二进制 + web/dist → target/docker（约 3 分钟）
