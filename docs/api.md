@@ -136,6 +136,14 @@ default 256). The EXIF embedded thumbnail is used when it exists; otherwise
 the server generates one and caches it on disk. Animated images give their
 first frame. Same caching headers as `/img`.
 
+
+### GET /cover?p=DIR[&s=256]
+A folder's picture for the grid: exactly the `/thumb` answer (body, ETag,
+caching) for the folder's first image in natural order. A folder without
+images of its own uses its first subfolder's, at most 3 levels down (series /
+volume / chapter; a `.cbz` counts as a folder). None: 404 `not_found`, and
+the UI keeps the folder icon. A file: 415 `unsupported`, as for `/list`.
+
 ### GET /meta?p=FILE
 Facts for fitting and for the info overlay, without decoding pixels.
 `width`/`height` are the **display** size, after orientation. Golden file:

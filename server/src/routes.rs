@@ -9,6 +9,7 @@
 //! two steps and never queues twice.
 
 mod config;
+mod cover;
 mod http;
 mod img;
 mod list;
@@ -40,6 +41,7 @@ fn api() -> Router<AppState> {
         .route("/list", get(list::get))
         .route("/img", get(img::get))
         .route("/thumb", get(thumb::get))
+        .route("/cover", get(cover::get))
         .route("/meta", get(meta::get))
         .route("/nav", get(nav::get))
         .route("/config", get(config::get).put(config::put))

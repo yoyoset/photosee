@@ -14,29 +14,42 @@ use photosee_core::thumbcache::ThumbCache;
 const MIN_EDGE: u32 = 64;
 const MAX_EDGE: u32 = 512;
 
-enum Outcome {
+pub(super) enum Outcome {
     NotModified(String),
     Jpeg { bytes: Vec<u8>, etag: String },
 }
 
 pub async fn get(State(state): State<AppState>, q: Q, headers: HeaderMap) -> Reply {
     let p = q.need("p")?.to_owned();
-    let edge = q
-        .number("s")?
-        .unwrap_or(DEFAULT_EDGE)
-        .clamp(MIN_EDGE, MAX_EDGE);
+    let edge = edge_of(&q)?;
     let inm = header_str(&headers, header::IF_NONE_MATCH).map(str::to_owned);
     let out = queued(&state.clone(), Priority::Thumb, move || {
         make(&state, &p, edge, inm.as_deref())
     })
     .await?;
-    Ok(match out {
-        Outcome::NotModified(tag) => not_modified(&tag),
-        Outcome::Jpeg { bytes, etag } => jpeg(bytes, &etag),
-    })
+    Ok(respond(out))
 }
 
-fn make(state: &AppState, logical: &str, edge: u32, inm: Option<&str>) -> Result<Outcome> {
+/// `s` from the query, clamped; shared with /cover.
+pub(super) fn edge_of(q: &Q) -> std::result::Result<u32, super::http::Fail> {
+    Ok(q.number("s")?
+        .unwrap_or(DEFAULT_EDGE)
+        .clamp(MIN_EDGE, MAX_EDGE))
+}
+
+pub(super) fn respond(out: Outcome) -> Response {
+    match out {
+        Outcome::NotModified(tag) => not_modified(&tag),
+        Outcome::Jpeg { bytes, etag } => jpeg(bytes, &etag),
+    }
+}
+
+pub(super) fn make(
+    state: &AppState,
+    logical: &str,
+    edge: u32,
+    inm: Option<&str>,
+) -> Result<Outcome> {
     let path = state.policy.resolve(logical)?;
     let stat = state.fs.stat(&path)?;
     require_file(&stat)?;

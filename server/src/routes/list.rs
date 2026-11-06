@@ -42,19 +42,24 @@ pub async fn get(State(state): State<AppState>, q: Q) -> Reply {
 
 fn list(state: &AppState, logical: &str) -> Result<Out> {
     let dir = state.policy.resolve(logical)?;
-    // The directory's own stat is the cache key: one cheap call decides
-    // whether the (possibly seconds-long) scan can be skipped.
-    let stat = state.fs.stat(&dir)?;
+    let listing = cached(state, &dir)?;
+    shape(&state.policy, &dir, listing)
+}
+
+/// The scan of a resolved directory, through the listing cache. The
+/// directory's own stat is the cache key: one cheap call decides whether the
+/// (possibly seconds-long) scan can be skipped.
+pub(super) fn cached(state: &AppState, dir: &Path) -> Result<Listing> {
+    let stat = state.fs.stat(dir)?;
     require_dir(&stat)?;
-    let listing = match state.listings.get(&dir, stat.mtime_ms) {
+    Ok(match state.listings.get(dir, stat.mtime_ms) {
         Some(hit) => hit,
         None => {
-            let fresh = scan::list(&*state.fs, &dir)?;
-            state.listings.put(&dir, stat.mtime_ms, fresh.clone());
+            let fresh = scan::list(&*state.fs, dir)?;
+            state.listings.put(dir, stat.mtime_ms, fresh.clone());
             fresh
         }
-    };
-    shape(&state.policy, &dir, listing)
+    })
 }
 
 fn shape(policy: &Policy, dir: &Path, listing: Listing) -> Result<Out> {
