@@ -33,6 +33,9 @@ struct Start {
 #[derive(Serialize)]
 struct Session {
     api_version: u32,
+    /// The product version (Cargo.toml [workspace.package]); the installer,
+    /// the portable zip and the Docker image all carry the same one.
+    version: &'static str,
     mode: &'static str,
     platform: &'static str,
     start: Option<Start>,
@@ -75,6 +78,7 @@ pub async fn get(State(state): State<AppState>, user: Option<Extension<CurrentUs
     };
     Ok(Json(Session {
         api_version: API_VERSION,
+        version: env!("CARGO_PKG_VERSION"),
         mode,
         platform: PLATFORM,
         start,

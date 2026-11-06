@@ -35,6 +35,8 @@ export interface Place {
 
 export interface Session {
   api_version: number;
+  /** Product version, the same for every build (scripts/gates.mjs checks). */
+  version: string;
   mode: 'desktop' | 'server';
   platform: 'windows' | 'macos' | 'linux' | 'android' | 'ios';
   start: { dir: string; file: string | null } | null;

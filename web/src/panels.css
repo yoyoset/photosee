@@ -55,6 +55,7 @@
   border: 1px solid #48484a; border-radius: 4px; font: 12px/1.6 var(--font);
 }
 
+.ps-version { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--fg-dim); }
 .ps-help-sub { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: var(--fg-dim); }
 .ps-help-sub:first-child { margin-top: 0; }
 .ps-help-link {

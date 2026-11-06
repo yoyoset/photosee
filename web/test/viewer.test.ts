@@ -48,7 +48,7 @@ function harness(o: { count?: number; dpr?: number; scrubbing?: boolean } = {}) 
     watch: (cb) => ((changed = cb), () => {}), watchDrag: (cb) => ((drag = cb), () => {}),
   };
   const store = new Store({ ...initialState, listing: listingOf(o.count ?? 5), scrubbing: o.scrubbing ?? false });
-  const session: Session = { api_version: 1, mode: 'desktop', platform: 'windows', start: null, roots: [] };
+  const session: Session = { api_version: 1, version: '0.0.0', mode: 'desktop', platform: 'windows', start: null, roots: [] };
   const ctx: Ctx = { store, api, src: new HttpImageSource(), esc: new EscStack(), session, dispatch: () => {} };
   const stage = document.createElement('div');
   const shown: number[] = [];

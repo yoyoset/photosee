@@ -39,7 +39,7 @@ cargo run --release --manifest-path tools/gen-fixtures/Cargo.toml   # 生成 fix
 **Docker（LAN 服务端，2026-11-05 起部署在 $LAN_HOST:8111）：**
 ```bash
 bash scripts/docker-stage.sh   # 本机交叉编译 musl 静态二进制 + web/dist → target/docker（约 3 分钟）
-tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && mkdir -p $DEPLOY_DIR/build && tar --no-same-owner -xzf - -C $DEPLOY_DIR/build && chmod -R a+rX $DEPLOY_DIR/build && chmod 755 $DEPLOY_DIR/build/photosee-server && cd $DEPLOY_DIR/build && docker build -t photosee:local . && cd $DEPLOY_DIR && docker compose up -d --force-recreate"
+tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && mkdir -p $DEPLOY_DIR/build && tar --no-same-owner -xzf - -C $DEPLOY_DIR/build && chmod -R a+rX $DEPLOY_DIR/build && chmod 755 $DEPLOY_DIR/build/photosee-server && cd $DEPLOY_DIR/build && docker build --build-arg VERSION=$(cat VERSION) -t photosee:local -t photosee:$(cat VERSION) . && cd $DEPLOY_DIR && docker compose up -d --force-recreate"
 ```
 - 首次需要 `rustup target add x86_64-unknown-linux-musl`。镜像是 `FROM scratch`，13 上不用拉任何基础镜像。
 - 13 是非特权 LXC：解 tar 必须带 `--no-same-owner`，否则 chown 报错退出。
@@ -47,7 +47,7 @@ tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && 
 - 从 git bash 给 Python/curl 传 `/disk1/...` 这类参数会被 MSYS 改写成 `C:/Program Files/Git/disk1/...`，服务端回 403。要加 `MSYS_NO_PATHCONV=1`。
 
 - 产物在 `target\release\bundle\nsis\PhotoSee_<ver>_x64-setup.exe` 和 `target\release\bundle\PhotoSee-<ver>-portable.zip`。
-- 版本号要在三处同时改：`Cargo.toml` 的 `[workspace.package]`、`app/tauri.conf.json`、`web/package.json`。`package.ps1` 从 `tauri.conf.json` 读版本号，给 zip 命名。
+- 版本号所有产物统一（用户 11-06 要求）。要在四处同时改：`Cargo.toml` 的 `[workspace.package]`、`app/tauri.conf.json`、`web/package.json`、`web/package-lock.json`（顶层和 `packages[""]` 两处）。`gates.mjs` 会比对，不一致 `check.ps1` 就失败。`package.ps1` 从 `tauri.conf.json` 读版本号给 zip 命名；`docker-stage.sh` 从 `Cargo.toml` 写 `VERSION`，镜像打 `photosee:<ver>` 标签和 label；`/session` 和设置面板底部显示同一个号。tools/ 和 spikes/ 不发布，版本号不管。
 - 11-05 的基线：Rust 247 passed / 9 ignored，web 466 passed，bundle 39,923 B gzip。
 
 **发布流程（v0.1.0 就是这么走的）：**

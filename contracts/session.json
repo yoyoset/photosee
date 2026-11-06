@@ -1,5 +1,6 @@
 {
   "api_version": 1,
+  "version": "0.0.0",
   "mode": "server",
   "platform": "linux",
   "start": null,

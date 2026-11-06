@@ -16,7 +16,7 @@ function setup(save: (s: Settings) => Promise<Settings> = async (s) => s, mode: 
     store: new Store({ ...initialState, settings: BASE }),
     esc: new EscStack(),
     api: { saveConfig } as unknown as Api,
-    session: { platform: 'windows', mode } as Session,
+    session: { platform: 'windows', mode, version: '9.8.7' } as Session,
     src: {}, dispatch: vi.fn(),
   } as unknown as Ctx;
   const opener = document.body.appendChild(document.createElement('button'));
@@ -156,6 +156,12 @@ describe('settings panel: modal behaviour', () => {
     expect(label(setup()).hidden).toBe(false);
     document.body.replaceChildren();
     expect(label(setup(undefined, 'server')).hidden).toBe(true);
+  });
+
+  it('shows which version this build is', () => {
+    const { panel, q } = setup();
+    panel.open();
+    expect(q('.ps-version').textContent).toBe('PhotoSee 9.8.7');
   });
 
   it('has a Controls button, the way to the help panel without a ? key', () => {

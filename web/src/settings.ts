@@ -203,6 +203,8 @@ export function mountSettings(root: HTMLElement, ctx: Ctx): PanelHandle {
   const help = el('button', 'ps-help-link', t('help.open'));
   help.type = 'button';
   help.addEventListener('click', () => ctx.dispatch({ type: 'toggle_help' }));
-  modal.body.append(form.el, help);
+  // Which build this is: the desktop app and the Docker server share one number.
+  const ver = el('p', 'ps-version', `PhotoSee ${ctx.session.version ?? ''}`.trim());
+  modal.body.append(form.el, help, ver);
   return modal;
 }

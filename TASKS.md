@@ -156,3 +156,14 @@ cold start only.
 | phone review, 11 fixes (11-06) | done | Back in the folder view (guard entry, browser-back.ts), double-tap anchor, details 44 px rows + name/size only when narrow, single view tap-to-open, Recent ×/Clear on touch, iOS long-press menu, manifest + home-screen icons, fullscreen button hidden without the API, folder covers (`/cover`, 3 server tests), landscape drops the filmstrip, settings sized for fingers, keep-awake during slideshows (Wake Lock on HTTPS, muted video on HTTP: not verified on a phone). Web 509 -> 518 tests |
 
 Not done: CBR (6 files on 13 stay invisible), .cbz folders show a plain folder icon instead of a cover.
+
+## v0.2.0 (2026-11-06)
+| step | status | note |
+|---|---|---|
+| one version everywhere | done | user: "所有版本的版本号统一". 0.2.0 in Cargo.toml, tauri.conf.json, package.json, package-lock.json; `gates.mjs` fails on a mismatch (tried: package.json 0.2.1 -> GATE). `/session.version`, settings footer, Docker image tag + label |
+| full gate | done | Rust 282 passed / 9 ignored, web 525 passed, bundle 48258 B gzip |
+| package | done | installer 4.24 MiB, portable zip 5.95 MiB; smoke.mjs all PASS |
+| portable run | done | fresh unzip, test JPEG 1200x800 decoded, /session version 0.2.0, settings footer "PhotoSee 0.2.0" (CDP) |
+| Docker | done | photosee:0.2.0 on $LAN_HOST:8111, label 0.2.0; /session of the image reports 0.2.0 |
+| GitHub release | not done | not asked; v0.1.0 is still the latest release |
+

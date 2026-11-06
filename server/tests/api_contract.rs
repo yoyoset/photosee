@@ -31,6 +31,8 @@ async fn session_matches_golden() {
     assert_eq!(r.status, StatusCode::OK);
     let mut want = golden("session.json");
     want["platform"] = json!(platform());
+    // The golden holds a placeholder: the real one changes every release.
+    want["version"] = json!(env!("CARGO_PKG_VERSION"));
     assert_eq!(r.json(), want);
 }
 

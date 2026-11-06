@@ -87,6 +87,26 @@ function checkOwnership(wp, base) {
   }
 }
 
+/** One product version everywhere (user, 2026-11-06): the installer and zip
+ * take it from tauri.conf.json, the binaries and /session from Cargo.toml,
+ * npm from package.json and its lockfile. tools/ and spikes/ are not shipped
+ * and keep their own. */
+function checkVersions() {
+  const json = (p) => JSON.parse(readFileSync(join(ROOT, p), 'utf8'));
+  const cargo = /\[workspace\.package\][^[]*?\nversion = "([^"]+)"/.exec(readFileSync(join(ROOT, 'Cargo.toml'), 'utf8'))?.[1];
+  const lock = json('web/package-lock.json');
+  const found = {
+    'Cargo.toml': cargo,
+    'app/tauri.conf.json': json('app/tauri.conf.json').version,
+    'web/package.json': json('web/package.json').version,
+    'web/package-lock.json': lock.version,
+    'web/package-lock.json packages[""]': lock.packages?.['']?.version,
+  };
+  if (new Set(Object.values(found)).size !== 1) {
+    problems.push(`versions differ: ${Object.entries(found).map(([k, v]) => `${k}=${v}`).join(', ')}`);
+  }
+}
+
 const args = process.argv.slice(2);
 if (args[0] === '--ownership') {
   checkOwnership(args[1], args[2] ?? 'main');
@@ -94,6 +114,7 @@ if (args[0] === '--ownership') {
   checkFileLengths();
   checkDepsDocumented();
   checkBundle();
+  checkVersions();
 }
 if (problems.length) {
   for (const p of problems) console.error(`GATE: ${p}`);
