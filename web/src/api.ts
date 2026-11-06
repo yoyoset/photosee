@@ -102,6 +102,8 @@ export type Priority = 'current' | 'prefetch';
 export interface ImageSource {
   imageUrl(path: string, box?: { w: number; h: number }, prio?: Priority): string;
   thumbUrl(path: string, edge: number): string;
+  /** A folder's picture (GET /cover). Optional: without it tiles keep the icon. */
+  coverUrl?(path: string, edge: number): string;
 }
 
 const q = encodeURIComponent;
@@ -116,6 +118,9 @@ export class HttpImageSource implements ImageSource {
 
   thumbUrl(path: string, edge: number): string {
     return `${this.base}/thumb?p=${q(path)}&s=${edge}`;
+  }
+  coverUrl(path: string, edge: number): string {
+    return `${this.base}/cover?p=${q(path)}&s=${edge}`;
   }
 }
 

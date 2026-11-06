@@ -34,6 +34,7 @@ export class TreeDrawer {
   }
 
   get isNarrow(): boolean { return this.narrow; }
+  get isOpen(): boolean { return this.open; }
 
   /** Applies the layout; returns whether the tree is showing. */
   apply(root: HTMLElement, winW: number, visiblePref: boolean): boolean {

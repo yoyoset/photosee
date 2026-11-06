@@ -9,6 +9,7 @@ import type { BrowserItem } from './browser-items';
 import type { Ctx } from './ctx';
 import { mountFilmstrip } from './filmstrip';
 import { bindMenu, type ContentHooks, type ContentView } from './grid';
+import { bindTapOpen } from './touch-tap';
 import {
   SingleLoader, WheelStepper, displaySize, neighbours, paneBox, type LoadImage,
 } from './single-load';
@@ -69,8 +70,12 @@ export class SingleView implements ContentView {
     el.addEventListener('pointermove', () => this.wake());
     strip.addEventListener('pointerenter', () => { this.hovered = true; this.wake(); });
     strip.addEventListener('pointerleave', () => { this.hovered = false; this.wake(); });
-    el.addEventListener('dblclick', () => this.hooks.open(this.sel));
-    el.addEventListener('click', () => this.focus());
+    // A finger has no double-click: a tap on the picture opens the viewer
+    // (phone review, 2026-11-06); a tap on the filmstrip only picks.
+    bindTapOpen(el, () => this.focus(), (e) => {
+      if ((e.target as Element).closest('.sv-strip')) this.focus();
+      else this.hooks.open(this.sel);
+    });
     el.addEventListener('wheel', (e) => {
       if (e.ctrlKey) return;
       e.preventDefault();

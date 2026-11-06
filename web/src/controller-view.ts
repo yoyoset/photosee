@@ -15,7 +15,7 @@ type ZoomAction = Extract<Action, { type: 'zoom_fit' | 'zoom_actual' | 'zoom_tog
 function nextZoom(z: Zoom, g: Geometry, a: ZoomAction): Zoom {
   switch (a.type) {
     case 'zoom_actual': return zoomActual(z, g);
-    case 'zoom_toggle': return toggleZoom(z, g);
+    case 'zoom_toggle': return toggleZoom(z, g, a.anchor);
     case 'zoom_by': return zoomAt(z, g, a.factor, a.anchor);
     case 'pan_by': return panBy(z, g, a.dx, a.dy);
     case 'zoom_fit': return FIT;

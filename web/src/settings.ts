@@ -68,9 +68,16 @@ class SettingsForm {
   constructor(private readonly ctx: Ctx, private readonly onFail: () => void) {
     this.el.noValidate = true;
     this.el.addEventListener('submit', (e) => e.preventDefault());
+    const startFs = checkbox('start_fullscreen');
+    const wheel = radioGroup('wheel');
+    // Options that cannot do anything here are not shown; their values are
+    // still loaded and saved untouched. The browser build cannot start in
+    // fullscreen (that needs a gesture), and a finger has no wheel.
+    startFs.hidden = ctx.session.mode === 'server';
+    wheel.hidden = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     this.el.append(
       this.intervalRow(), radioGroup('on_end'), checkbox('shuffle'),
-      radioGroup('transition'), checkbox('start_fullscreen'), radioGroup('wheel'), this.err,
+      radioGroup('transition'), startFs, wheel, this.err,
     );
     this.el.addEventListener('input', this.onEvent);
     this.el.addEventListener('change', this.onEvent);

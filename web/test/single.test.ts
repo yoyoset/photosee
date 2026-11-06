@@ -250,4 +250,20 @@ describe('single: strip and wheel', () => {
     view.el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(r.hooks.open).toHaveBeenCalledWith(2);
   });
+
+  it('a finger: one tap on the picture opens the viewer, a tap on the filmstrip does not', () => {
+    r = rig();
+    const tap = (el: Element): void => {
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true }));
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    };
+    tap(r.view.el.querySelector('.sv-stage') as Element);
+    expect(r.hooks.open).toHaveBeenCalledTimes(1); // with the selected index, as a double-click
+    // A fresh view: two taps within DOUBLE_TAP_MS count as one (touch-tap.ts).
+    r.view.dispose();
+    document.body.replaceChildren();
+    r = rig();
+    tap(r.view.el.querySelector('.sv-strip') as Element);
+    expect(r.hooks.open).not.toHaveBeenCalled();
+  });
 });

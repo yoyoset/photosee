@@ -2,7 +2,7 @@
 // Dimensions are the one column the listing cannot give; they are filled from
 // /meta for the rows in view only (see MetaCache for the request discipline).
 
-import { DETAILS_ROW_PX } from './browser-consts';
+import { DETAILS_ROW_PX, DETAILS_ROW_TOUCH_PX } from './browser-consts';
 import { icon } from './browser-icons';
 import type { BrowserItem } from './browser-items';
 import type { MetaCache } from './browser-meta';
@@ -29,6 +29,8 @@ const COLUMNS: { id: string; sort: SortKey | null; label: Key }[] = [
   { id: 'dims', sort: null, label: 'br.col.dims' },
 ];
 
+const coarse = (): boolean => window.matchMedia?.('(pointer: coarse)').matches ?? false;
+
 export class DetailsView implements ContentView {
   readonly el = document.createElement('div');
   private readonly head = document.createElement('div');
@@ -43,7 +45,7 @@ export class DetailsView implements ContentView {
       if (key) o.onSort(key);
     });
     this.view = new VirtualView({
-      layout: (w) => listLayout(w, DETAILS_ROW_PX),
+      layout: (w) => listLayout(w, coarse() ? DETAILS_ROW_TOUCH_PX : DETAILS_ROW_PX),
       make: (i) => this.makeRow(i),
       onRender: (r) => {
         // The header sits outside the scroller: leave room for its scrollbar so columns line up.

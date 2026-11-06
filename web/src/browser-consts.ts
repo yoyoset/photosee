@@ -42,6 +42,9 @@ export const GRID_MARGIN_PX = 8;
 export const OVERSCAN_ROWS = 3;
 
 export const DETAILS_ROW_PX = 24;
+/** Under `pointer: coarse`: a 24 px row is half a fingertip (phone review,
+ * 2026-11-06). Matches TOUCH_TARGET_PX; browser.css sets --dr-h to it. */
+export const DETAILS_ROW_TOUCH_PX = 44;
 
 export const RECENT_MAX = 10;
 /** Network places are a small list; this only bounds a corrupt file. */

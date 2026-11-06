@@ -104,6 +104,23 @@ Notes:
 - Browser: a tap on a file or folder opens it (a mouse click only selects).
   A second tap within `DOUBLE_TAP_MS` is ignored. Long-press opens the item
   menu. Tree rows and toolbar buttons are 36 px under `pointer: coarse`.
+- Back (the phone's gesture, a mouse back button) in the folder view closes
+  the drawer, else opens the previous folder, else the parent; only from the
+  top does it leave PhotoSee (browser-back.ts). Before 2026-11-06 it left
+  PhotoSee from any folder.
+- Double tap zooms around the tapped spot. Long-press opens the item menu on
+  iOS too (`LONG_PRESS_MS`, 500; iOS sends no `contextmenu`).
+- Under `pointer: coarse` the details rows are 44 px, the Recent row × and
+  "Clear" are always shown, and the settings controls are 22–44 px.
+- A tap on the picture in the single view opens the viewer.
+- Folder tiles show the folder's first page (`/cover`), with the folder icon
+  as a corner badge; no cover keeps the plain icon.
+- Phones on their side (height ≤ 480 px) drop the filmstrip from the viewer's
+  bottom bar: the bars took 57% of a 375 px height.
+- Browser build: "Add to Home Screen" opens PhotoSee without browser bars
+  (manifest, `display: fullscreen`). Without a fullscreen API (iPhone Safari)
+  the fullscreen button is hidden. During a slideshow the screen is kept on:
+  Wake Lock on HTTPS, a muted 16×16 looping video on plain HTTP.
 - Browser at or below `NARROW_MAX_PX` (640) wide: the tree is a drawer over
   the files, closed by default. Picking a folder or tapping the dimmed area
   closes it. Its state is per page, never the shared `tree.visible`.

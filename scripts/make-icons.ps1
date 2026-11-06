@@ -12,3 +12,4 @@ foreach ($f in 'icon.ico', 'icon.png', 'icon.icns', '32x32.png', '128x128.png', 
 }
 Copy-Item (Join-Path $root 'app\icons\logo.svg') (Join-Path $root 'web\public\favicon.svg') -Force
 Write-Host 'icons: app/icons + web/public/favicon.svg updated'
+& (Join-Path $PSScriptRoot 'make-web-icons.ps1')

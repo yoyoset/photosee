@@ -74,3 +74,15 @@ html.cursor-hidden, html.cursor-hidden * { cursor: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .ov-top, .ov-bottom { transition: none; }
 }
+
+/* No fullscreen API (iPhone Safari): the button would do nothing, so it is
+   not shown; "Add to Home Screen" is the way there (index.html). */
+html.no-fs .ov-btn[data-id="fullscreen"] { display: none; }
+
+/* A phone on its side is ~375 px tall: the two bars took 212 px of it (57%).
+   Drop the filmstrip and the gradient padding there; the buttons stay. */
+@media (max-height: 480px) {
+  .ov-bottom .fs { display: none; }
+  .ov-bottom { padding-top: 12px; }
+  .ov-top { padding-bottom: 12px; }
+}

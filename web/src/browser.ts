@@ -50,6 +50,7 @@ export interface Browser {
   readonly content: ContentHost;
   readonly tree: TreeView;
   readonly toolbar: Toolbar;
+  readonly drawer: TreeDrawer;
   show(): void;
   hide(): void;
   dispose(): void;
@@ -61,7 +62,7 @@ class BrowserImpl implements Browser {
   readonly tree: TreeView;
   readonly toolbar: Toolbar;
   private readonly model: TreeModel;
-  private readonly drawer: TreeDrawer;
+  readonly drawer: TreeDrawer;
   private readonly empty: HTMLElement;
   private readonly statusL: HTMLElement;
   private readonly statusR: HTMLElement;

@@ -100,3 +100,11 @@
  * image already on screen flicker. Reduced motion: the class is never set. */
 #stage.ps-fade img { transition: opacity var(--ps-fade-ms, 300ms) ease-out; }
 @starting-style { #stage.ps-fade img { opacity: 0; } }
+
+/* Fingers (phone review, 2026-11-06): the native 13 px radios and boxes and
+   the 35x32 close button were too small to hit. */
+@media (pointer: coarse) {
+  .ps-close { min-width: 44px; min-height: 44px; }
+  .ps-settings-form label { min-height: 40px; }
+  .ps-settings-form input[type="radio"], .ps-settings-form input[type="checkbox"] { width: 22px; height: 22px; margin: 0; }
+}

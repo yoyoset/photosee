@@ -24,6 +24,9 @@ import type { ViewerOptions } from './viewer';
 import { showLogin } from './login';
 import { recordReading, resumeReading, resumes } from './resume';
 import { mountAccount } from './account';
+import type { Browser } from './browser';
+import { bindBrowserBack } from './browser-back';
+import { keepAwakeDuringSlideshow } from './keep-awake';
 
 export interface BootDeps {
   api?: Api;
@@ -52,6 +55,15 @@ export interface App {
 function provisional(dir: string, file: string): Listing {
   const name = folderName(file); // last path segment, either separator
   return { dir, parent: null, dirs: [], images: [{ name, path: file, fmt: 'jpeg', size: 0, mtime_ms: 0 }] };
+}
+
+/** One Back inside the folder view: drawer, previous folder, parent. */
+function browserStep(b: Browser): boolean {
+  if (b.drawer.isOpen) b.drawer.close();
+  else if (b.nav.history.canBack) void b.nav.back();
+  else if (b.nav.canUp) void b.nav.up();
+  else return false;
+  return true;
 }
 
 function hintOnce(host: HTMLElement): void {
@@ -111,13 +123,18 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   const mounted = mountAll(ctx, controller, prefs, host, doc, win, deps.viewer);
   win.addEventListener('pagehide', () => void prefs.flush());
   const offRecord = resumes(session) ? recordReading(store, prefs) : () => {};
+  const back = bindBrowserBack(win, () => store.get().mode === 'viewer', () => browserStep(mounted.modes.browser()));
+  const offArm = store.subscribe((s, p) => { if (s.listing !== p.listing || s.mode !== p.mode) back.arm(); });
+  const offAwake = keepAwakeDuringSlideshow(store, doc);
+  // iPhone Safari has no fullscreen API: its button would do nothing (overlay.css).
+  doc.documentElement.classList.toggle('no-fs', session.mode === 'server' && !doc.fullscreenEnabled);
   if (session.user) {
     mountAccount(mounted.modes.browser().toolbar.el, { doc, api, session, reload: () => win.location.reload() });
   }
   return {
     ctx, controller, prefs, modes: mounted.modes,
     started: start(ctx, controller, mounted.parts, mounted.modes, prefs),
-    dispose() { offRecord(); offFit(); mounted.dispose(); prefs.dispose(); },
+    dispose() { offRecord(); offFit(); offArm(); offAwake(); back.dispose(); mounted.dispose(); prefs.dispose(); },
   };
 }
 

@@ -136,6 +136,15 @@ body.mode-browser #browser { display: flex; }
 .gc-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .gc.dir .gc-thumb { background: transparent; }
 .gc.dir svg.ic, .gc-thumb.bad svg.ic { width: 38%; height: 38%; stroke-width: 0.9; }
+/* Folder cover (grid.ts addCover): hidden until loaded, then the icon
+   shrinks to a badge in the corner. */
+.gc.dir .gc-thumb { position: relative; }
+.gc-cover { display: none; }
+.gc-thumb.has-cover .gc-cover { display: block; }
+.gc-thumb.has-cover > svg.ic {
+  position: absolute; right: 4px; bottom: 4px; width: 26px; height: 26px; padding: 4px;
+  color: #fff; background: rgb(0 0 0 / 0.6); border-radius: 4px; stroke-width: 1.6;
+}
 .gc-name { display: flex; justify-content: center; flex: none; height: var(--label); line-height: var(--label); padding-top: 2px; }
 .gc.sel { background: var(--sel-idle); color: #fff; }
 .vv:focus .gc.sel { background: var(--sel); outline: 1px solid var(--accent); outline-offset: -1px; }
@@ -153,7 +162,7 @@ button.dh:hover { background: var(--hover); color: var(--txt); }
 .dh.on { color: var(--txt); }
 .dh-size, .dh-dims { justify-content: flex-end; }
 .dh svg.ic { width: 12px; height: 12px; }
-.dr { height: 24px; line-height: 24px; cursor: default; }
+.dr { height: var(--dr-h, 24px); line-height: var(--dr-h, 24px); cursor: default; }
 .dr:hover { background: var(--hover); }
 .dc { min-width: 0; padding: 0 8px; overflow: hidden; white-space: nowrap; color: var(--dim); }
 .dc-name { display: flex; align-items: center; gap: 6px; color: var(--txt); }
@@ -202,7 +211,12 @@ button.dh:hover { background: var(--hover); color: var(--txt); }
 
 /* Fingers: tree rows and toolbar buttons big enough to hit (ux-spec Touch). */
 @media (pointer: coarse) {
-  .br { --tr-row: 36px; }
+  .br { --tr-row: 36px; --dr-h: 44px; }
+  /* No hover on a finger: the Recent row × and "Clear" are always shown. */
+  .tr-x { display: grid; width: 32px; height: 32px; }
+  .tr-clear { opacity: 1; padding: 6px 8px; }
+  /* No iOS callout or text selection on a long-press: that is the item menu. */
+  .gc, .dr, .tr-row { -webkit-touch-callout: none; user-select: none; }
   .tb, .tb-sel { height: 36px; min-width: 36px; }
   .addr { height: 36px; }
   .tr-chev { width: 24px; height: 24px; justify-content: center; align-items: center; }
@@ -220,3 +234,9 @@ button.dh:hover { background: var(--hover); color: var(--txt); }
 .br.narrow .addr { flex-basis: 150px; }
 .br.narrow .tb-range { flex: 1 1 56px; width: 56px; }
 .br.narrow .br-status { padding-bottom: env(safe-area-inset-bottom); height: auto; min-height: 24px; }
+
+/* Narrow details list: name and size only. All five columns were 540 px wide
+   in a 375 px window, scrolled sideways and cut names to 160 px (2026-11-06). */
+.br.narrow .dt-head, .br.narrow .dr { grid-template-columns: minmax(0, 1fr) 80px; }
+.br.narrow .dh-date, .br.narrow .dh-type, .br.narrow .dh-dims,
+.br.narrow .dc-date, .br.narrow .dc-type, .br.narrow .dc-dims { display: none; }

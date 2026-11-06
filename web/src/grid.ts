@@ -7,8 +7,11 @@ import { CELL_LABEL_PX, CELL_PAD_PX, THUMB_WHEEL_STEP_PX } from './browser-const
 import { icon } from './browser-icons';
 import { splitMiddle, type BrowserItem } from './browser-items';
 import { gridLayout, thumbRequest } from './grid-geometry';
+
+/** /cover clamps `s` to 64..=512 like /thumb; big tiles ask for the most. */
+const COVER_MAX_EDGE = 512;
 import { VirtualView } from './grid-virtual';
-import { bindTapOpen } from './touch-tap';
+import { bindLongPress, bindTapOpen } from './touch-tap';
 
 /** What the browser needs from either content view. */
 export interface ContentView {
@@ -37,12 +40,13 @@ export interface ContentHooks {
 
 /** Shared by grid and details: right-click on an item opens our menu. */
 export function bindMenu(el: HTMLElement, indexAt: (t: EventTarget | null) => number, hooks: ContentHooks): void {
-  el.addEventListener('contextmenu', (e) => {
+  const open = (e: MouseEvent): boolean => {
     const i = indexAt(e.target);
-    if (i < 0) return;
-    e.preventDefault();
-    hooks.menu(i, e.clientX, e.clientY);
-  });
+    if (i >= 0) hooks.menu(i, e.clientX, e.clientY);
+    return i >= 0;
+  };
+  el.addEventListener('contextmenu', (e) => { if (open(e)) e.preventDefault(); });
+  bindLongPress(el, (e) => void open(e));
 }
 
 export interface GridOpts {
@@ -144,6 +148,7 @@ export class GridView implements ContentView {
     thumb.className = 'gc-thumb';
     if (it.kind === 'dir') {
       thumb.append(icon('folder'));
+      this.addCover(thumb, it.path);
     } else {
       const img = document.createElement('img');
       img.alt = '';
@@ -160,6 +165,19 @@ export class GridView implements ContentView {
     cell.title = it.name;
     if (this.names) cell.append(this.nameLabel(it));
     return cell;
+  }
+
+  /** The folder's first page over its icon, once it loaded: on a phone every
+   * comic folder was the same grey icon (2026-11-06). The icon stays as a
+   * small badge so a folder still reads as one; no cover keeps the icon. */
+  private addCover(thumb: HTMLElement, path: string): void {
+    const req = thumbRequest(this.size, this.o.dpr());
+    const url = this.src.coverUrl?.(path, 'edge' in req ? req.edge : COVER_MAX_EDGE);
+    if (!url) return;
+    const img = Object.assign(document.createElement('img'), { alt: '', draggable: false, decoding: 'async', className: 'gc-cover' });
+    img.addEventListener('load', () => thumb.classList.add('has-cover'));
+    img.src = url;
+    thumb.append(img);
   }
 
   private nameLabel(it: BrowserItem): HTMLElement {
@@ -182,7 +200,9 @@ export class GridView implements ContentView {
 
   /** A thumbnail that failed (corrupt file, unsupported format) keeps its cell. */
   private onBroken(target: EventTarget | null): void {
-    const thumb = (target as Element | null)?.closest('.gc-thumb');
+    const el = target as Element | null;
+    if (el?.classList?.contains('gc-cover')) return el.remove(); // no cover: the icon stays
+    const thumb = el?.closest('.gc-thumb');
     if (!thumb) return;
     thumb.classList.add('bad');
     thumb.replaceChildren(icon('broken'));

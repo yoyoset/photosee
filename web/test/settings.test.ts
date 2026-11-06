@@ -10,13 +10,13 @@ const BASE: Settings = {
   transition: 'none', start_fullscreen: true, wheel: 'navigate',
 };
 
-function setup(save: (s: Settings) => Promise<Settings> = async (s) => s) {
+function setup(save: (s: Settings) => Promise<Settings> = async (s) => s, mode: Session['mode'] = 'desktop') {
   const saveConfig = vi.fn(save);
   const ctx = {
     store: new Store({ ...initialState, settings: BASE }),
     esc: new EscStack(),
     api: { saveConfig } as unknown as Api,
-    session: { platform: 'windows' } as Session,
+    session: { platform: 'windows', mode } as Session,
     src: {}, dispatch: vi.fn(),
   } as unknown as Ctx;
   const opener = document.body.appendChild(document.createElement('button'));
@@ -150,6 +150,14 @@ describe('settings panel: failures and validation', () => {
 });
 
 describe('settings panel: modal behaviour', () => {
+  it('the browser build hides "start fullscreen": it cannot do anything there', () => {
+    const label = (s: ReturnType<typeof setup>): HTMLElement =>
+      s.q<HTMLInputElement>('input[name=start_fullscreen]').closest('label') as HTMLElement;
+    expect(label(setup()).hidden).toBe(false);
+    document.body.replaceChildren();
+    expect(label(setup(undefined, 'server')).hidden).toBe(true);
+  });
+
   it('has a Controls button, the way to the help panel without a ? key', () => {
     const { ctx, panel, q } = setup();
     panel.open();

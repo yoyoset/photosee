@@ -6,6 +6,16 @@
     <meta name="color-scheme" content="dark" />
     <title>PhotoSee</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- "Add to Home Screen" opens PhotoSee without the browser bars. iPhone
+         Safari has no fullscreen API, so this is the only way to read there
+         without the address bar (phone review, 2026-11-06). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PhotoSee" />
+    <meta name="theme-color" content="#000000" />
     <link rel="stylesheet" href="./src/style.css" />
     <link rel="stylesheet" href="./src/overlay.css" />
   </head>

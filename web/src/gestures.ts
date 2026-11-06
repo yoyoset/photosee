@@ -195,7 +195,7 @@ class Gestures {
     }
     if (kind === 'double') {
       this.cancelPending();
-      this.emit({ type: 'zoom_toggle' });
+      this.emit({ type: 'zoom_toggle', anchor: { x: p.x, y: p.y } });
       return;
     }
     if (!mouse) {

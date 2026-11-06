@@ -8,6 +8,16 @@
  * removes the entry again when the viewer was left another way (Esc, the
  * back button), so Back from the folder view still means "previous page".
  */
+let ownBack = false;
+
+/** True once after the viewer itself went back (left by Esc or a button):
+ * that popstate is cleanup, and browser-back.ts must not take a step. */
+export function viewerOwnsPop(): boolean {
+  const v = ownBack;
+  ownBack = false;
+  return v;
+}
+
 export function bindViewerHistory(win: Window, close: () => void): () => void {
   win.history.pushState({ photoseeViewer: true }, '');
   let popped = false;
@@ -18,6 +28,8 @@ export function bindViewerHistory(win: Window, close: () => void): () => void {
   win.addEventListener('popstate', onPop);
   return () => {
     win.removeEventListener('popstate', onPop);
-    if (!popped) win.history.back();
+    if (popped) return;
+    ownBack = true;
+    win.history.back();
   };
 }

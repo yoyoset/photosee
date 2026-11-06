@@ -8,7 +8,10 @@ export type Action =
   | { type: 'toggle_fullscreen' }
   | { type: 'toggle_slideshow' }
   | { type: 'rotate'; quarterTurns: 1 | -1 }
-  | { type: 'zoom_fit' } | { type: 'zoom_actual' } | { type: 'zoom_toggle' }
+  | { type: 'zoom_fit' } | { type: 'zoom_actual' }
+  /** Double-click / double-tap; `anchor` as for zoom_by: the spot under the
+   * finger stays put (a speech bubble, not the page centre). */
+  | { type: 'zoom_toggle'; anchor?: { x: number; y: number } }
   /** Back to fit when zoomed; already fitted: the next fit (whole, width, height). */
   | { type: 'fit_cycle' }
   /** `anchor`: CSS px from the stage's top-left (the stage covers the window,

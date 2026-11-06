@@ -66,7 +66,7 @@ describe('mouse', () => {
     ptr('pointerdown', 500, 300, 0, { kind: 'mouse' }); ptr('pointerup', 500, 300, 30, { kind: 'mouse' });
     ptr('pointerdown', 500, 300, 100, { kind: 'mouse' }); ptr('pointerup', 500, 300, 130, { kind: 'mouse' });
     vi.advanceTimersByTime(1000);
-    expect(seen).toEqual([{ type: 'zoom_toggle' }]);
+    expect(seen).toEqual([{ type: 'zoom_toggle', anchor: { x: 500, y: 300 } }]);
   });
 
   it('edge click turns the page at once', () => {
@@ -194,7 +194,8 @@ describe('touch: taps', () => {
     drag([[500, 300, 0], [500, 300, 40]]);
     drag([[505, 302, 150], [505, 302, 190]]);
     vi.advanceTimersByTime(2000);
-    expect(seen).toEqual([{ type: 'zoom_toggle' }]);
+    // Around the second tap: the spot under the finger stays put.
+    expect(seen).toEqual([{ type: 'zoom_toggle', anchor: { x: 505, y: 302 } }]);
     expect(store.get().overlayVisible).toBe(before);
   });
 
