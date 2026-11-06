@@ -10,7 +10,12 @@
   --font: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   color-scheme: dark;
 }
-* { box-sizing: border-box; }
+/* manipulation = pan and pinch, but no double-tap-to-zoom of the page:
+   tapping "next" quickly on a phone zoomed the whole page (user, 2026-11-06).
+   It has to be on every element, not only the root: an element's effective
+   touch-action stops at its nearest scrolling ancestor. #stage (none) and
+   the filmstrip (none) handle their own gestures and win on specificity. */
+* { box-sizing: border-box; touch-action: manipulation; }
 html, body {
   margin: 0; height: 100%; overflow: hidden;
   background: var(--bg); color: var(--fg); font: 14px/1.4 var(--font);

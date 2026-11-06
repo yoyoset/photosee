@@ -113,6 +113,12 @@ Notes:
 - Under `pointer: coarse` the details rows are 44 px, the Recent row × and
   "Clear" are always shown, and the settings controls are 22–44 px.
 - A tap on the picture in the single view opens the viewer.
+- No double-tap zoom of the page anywhere (`touch-action: manipulation` on
+  every element): tapping "next" quickly zoomed the whole page (user,
+  2026-11-06). The stage and the filmstrip handle their own touches.
+- The filmstrip drags (finger or mouse) and glides after a flick; the wheel
+  scrolls it. The view only moves: a tap on a thumbnail changes the image,
+  the lift of a drag does not. The next image centres it again.
 - Folder tiles show the folder's first page (`/cover`), with the folder icon
   as a corner badge; no cover keeps the plain icon.
 - Phones on their side (height ≤ 480 px) drop the filmstrip from the viewer's

@@ -1,13 +1,15 @@
 // Virtualized thumbnail strip, mounted inside the overlay's bottom bar.
 // Package J.
 //
-// Why a transform and not native scrolling: the current item must always sit
-// in the centre, so the strip is positioned from the index alone. That makes
+// Why a transform and not native scrolling: the current item sits in the
+// centre, so the strip is positioned from the index alone, plus the `shift`
+// a drag or the wheel added (filmstrip-drag.ts; reset on every image change). That makes
 // "which items are on screen" pure arithmetic (`visibleRange`) and keeps a
 // 10 000-image folder at a few dozen DOM nodes. There is deliberately no
 // easing: image changes are instant everywhere else in the viewer.
 
 import { FILMSTRIP_THUMB_PX, THUMB_EDGE } from './constants';
+import { bindStripDrag, clampOffset } from './filmstrip-drag';
 import type { Ctx } from './ctx';
 import type { ViewState } from './state';
 
@@ -63,6 +65,8 @@ class Strip {
   private readonly cells = new Map<number, HTMLElement>();
   private cur: HTMLElement | null = null;
   private lastListing: ViewState['listing'] = null;
+  /** px the user dragged the view away from the centred position. */
+  private shift = 0;
 
   constructor(private readonly ctx: Ctx) {
     this.el.className = 'fs';
@@ -91,7 +95,9 @@ class Strip {
     }
     const images = listing?.images ?? [];
     const w = this.el.clientWidth || window.innerWidth;
-    const off = centerOffset(index, w);
+    const base = centerOffset(index, w);
+    const off = clampOffset(base + this.shift, w, images.length, STRIDE_PX);
+    this.shift = off - base;
     this.track.style.width = `${images.length * STRIDE_PX}px`;
     this.track.style.transform = `translateX(${-off}px)`;
     const { start, end } = visibleRange(off, w, STRIDE_PX, images.length, OVERSCAN);
@@ -100,6 +106,16 @@ class Strip {
     this.cur = this.cells.get(index) ?? null;
     this.cur?.classList.add('cur');
   };
+
+  getShift = (): number => this.shift;
+  setShift = (v: number): boolean => {
+    const before = this.shift;
+    this.shift = v;
+    this.render();
+    return Math.abs(this.shift - before) > 0.01;
+  };
+  /** A new image (or folder): the current one is centred again. */
+  recenter(): void { this.shift = 0; }
 
   private reconcile(start: number, end: number): void {
     for (const [i, el] of this.cells) {
@@ -132,11 +148,16 @@ export function mountFilmstrip(host: HTMLElement, ctx: Ctx): () => void {
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => strip.render()) : null;
   ro?.observe(strip.el);
   const unsub = ctx.store.subscribe((s, prev) => {
-    if (s.listing !== prev.listing || s.index !== prev.index) strip.render();
+    if (s.listing !== prev.listing || s.index !== prev.index) {
+      strip.recenter();
+      strip.render();
+    }
   });
+  const unDrag = bindStripDrag(strip.el, strip);
   strip.render();
   return () => {
     unsub();
+    unDrag();
     ro?.disconnect();
     window.removeEventListener('resize', strip.render);
     strip.el.remove();

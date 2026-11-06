@@ -41,7 +41,8 @@
 }
 .fs, .ov-bar { pointer-events: auto; }
 
-.fs { position: relative; width: 100%; height: calc(var(--thumb, 64px) + 8px); overflow: hidden; }
+.fs { position: relative; width: 100%; height: calc(var(--thumb, 64px) + 8px); overflow: hidden; touch-action: none; }
+.fs.dragging .fs-cell { cursor: grabbing; }
 .fs-track { position: absolute; left: 0; top: 4px; height: var(--thumb, 64px); will-change: transform; }
 .fs-cell {
   position: absolute; top: 0; width: var(--thumb, 64px); height: var(--thumb, 64px);
