@@ -165,5 +165,6 @@ Not done: CBR (6 files on 13 stay invisible), .cbz folders show a plain folder i
 | package | done | installer 4.24 MiB, portable zip 5.95 MiB; smoke.mjs all PASS |
 | portable run | done | fresh unzip, test JPEG 1200x800 decoded, /session version 0.2.0, settings footer "PhotoSee 0.2.0" (CDP) |
 | Docker | done | photosee:0.2.0 on $LAN_HOST:8111, label 0.2.0; /session of the image reports 0.2.0 |
-| GitHub release | not done | not asked; v0.1.0 is still the latest release |
+| scrub before push | done | 16 unpushed commits rewritten: LAN IP, deploy dir, disk and comic folder names -> `$LAN_HOST`, `$DEPLOY_DIR`, disk1/disk2, "Comics" (24 lines, 8 files, messages too); real values in gitignored `local/deploy.md`; rescan of `git log -p origin/main..main` found 0 |
+| GitHub release | done | https://github.com/yoyoset/photosee/releases/tag/v0.2.0 (latest). Downloaded back from `releases/latest`: both sha256 match; the downloaded portable opened a 1200x800 JPEG and reported 0.2.0 |
 

@@ -23,6 +23,12 @@ PhotoSee 是一个只用来看图的 Windows 看图软件。Rust 核心 `core/` 
   - `PhotoSee-0.1.0-portable.zip`：5.84 MiB，sha256 `a08f53fc8aa717ac3cbac12baee102eccceba5080bc67a53567af88ac5ad109a`
   - 两个文件都从 GitHub 下回来核过哈希，下回来的绿色版跑过，能出图。
 - README（中文，5 张截图）、MIT LICENSE、CHANGELOG 都已入库。
+**v0.2.0（2026-11-06）已发布，现在是 latest：** https://github.com/yoyoset/photosee/releases/tag/v0.2.0
+- `PhotoSee_0.2.0_x64-setup.exe`：4.24 MiB，sha256 `24a9b93db4b62e6f888fc58b78a447a9e00acad97cf245a8087747676c82f424`
+- `PhotoSee-0.2.0-portable.zip`：5.95 MiB，sha256 `361d2d6d48997f087bfedd27af4987e8451d85d09df59fb96fd2b1c828f2b44d`
+- 两个都从 `releases/latest` 下回来核过哈希，下回来的绿色版能出图、版本号 0.2.0。基线：Rust 282 passed / 9 ignored，web 525 passed，bundle 48,258 B gzip。
+- 推送前重写过 16 个未推送的提交，把家庭网络信息换成占位符（见 §2 Docker 上面那段）。
+
 - squareuncle.com 下载页**还没上架**。上架属于 SUBLOG 仓库，排期见 `F:\my_ai\SUBLOG\video\weekly\2026-11-博客与产品排期.md`（这个文件不进 git）。
 
 ## 2. 命令（全部实跑过）
