@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, type ErrorCode } from '../src/api';
 import {
-  errorSentence, nextFolderKey, renderErrorCard, showEmptyFolder, showLastHint, showNasBanner, showToast,
+  errorSentence, renderErrorCard, showEmptyFolder, showLastHint, showNasBanner, showToast,
 } from '../src/errors';
 import { setLang, t } from '../src/i18n';
 
@@ -108,13 +108,13 @@ describe('toast and hints', () => {
     vi.useRealTimers();
   });
 
-  it('empty-folder notice and last hint use the platform key', () => {
-    showEmptyFolder(host, 'macos');
-    expect(host.textContent).toBe(t('hint.empty_folder', { key: '⌘→' }));
-    showEmptyFolder(host, 'windows');
+  it('empty-folder notice and last hint name no key: phones have none', () => {
+    showEmptyFolder(host);
+    expect(host.textContent).toBe(t('hint.empty_folder'));
+    showEmptyFolder(host);
     expect(host.querySelectorAll('.ps-notice').length).toBe(1);
-    expect(host.textContent).toContain('Ctrl+→');
-    showLastHint(host, 'linux');
-    expect(host.querySelector('.ps-toast')?.textContent).toBe(t('hint.last', { key: nextFolderKey('linux') }));
+    showLastHint(host);
+    expect(host.querySelector('.ps-toast')?.textContent).toBe(t('hint.last'));
+    expect(host.textContent).not.toMatch(/Ctrl|⌘/);
   });
 });

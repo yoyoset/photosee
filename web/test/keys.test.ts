@@ -24,7 +24,7 @@ describe('keyAction: full table', () => {
     ['r', {}, { type: 'rotate', quarterTurns: 1 }],
     ['R', shift, { type: 'rotate', quarterTurns: -1 }],
     ['r', shift, { type: 'rotate', quarterTurns: -1 }],
-    ['0', {}, T('zoom_fit')], ['1', {}, T('zoom_actual')],
+    ['0', {}, T('zoom_fit')], ['1', {}, T('zoom_actual')], ['w', {}, T('fit_cycle')],
     ['+', shift, { type: 'zoom_by', factor: ZOOM_STEP }],
     ['=', {}, { type: 'zoom_by', factor: ZOOM_STEP }],
     ['+', {}, { type: 'zoom_by', factor: ZOOM_STEP }],

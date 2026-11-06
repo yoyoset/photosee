@@ -11,6 +11,6 @@ describe('i18n', () => {
 
   it('fills placeholders and keeps unknown ones visible', () => {
     expect(t('live.position', { n: 23, total: 412, name: 'a.jpg' }, 'en')).toBe('23 of 412, a.jpg');
-    expect(t('hint.last', {}, 'zh')).toContain('{key}');
+    expect(t('status.selected', {}, 'zh')).toContain('{name}');
   });
 });

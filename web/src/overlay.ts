@@ -9,7 +9,8 @@ import type { Ctx } from './ctx';
 import { mountFilmstrip } from './filmstrip';
 import { ICONS } from './overlay-icons';
 import { t, type Key } from './i18n';
-import type { ViewState } from './state';
+import { topButtons } from './overlay-top';
+import type { FitMode, ViewState } from './state';
 
 /**
  * Pure idle tracker with injected time, so the hide logic is testable
@@ -85,6 +86,9 @@ export function titleParts(item: ImageItem, index: number, total: number, dir: s
   return { ...splitName(item.name), pos: `${index + 1} / ${total}`, folder: folderName(dir) };
 }
 
+const FIT_LABEL: Record<FitMode, Key> = { contain: 'fit.contain', width: 'fit.width', height: 'fit.height' };
+const FIT_ICON: Record<FitMode, string> = { contain: ICONS.fit, width: ICONS.fitW, height: ICONS.fitH };
+
 interface BtnView { id: string; action: Action; label: Key; icon: string; shortcut: string }
 
 /** The eight buttons, in bar order, for the given state. Pure. */
@@ -100,9 +104,9 @@ export function buttonViews(s: ViewState, platform: Session['platform']): BtnVie
     b('next', { type: 'next' }, 'btn.next', ICONS.next, '→'),
     b('ccw', { type: 'rotate', quarterTurns: -1 }, 'btn.rotate_ccw', ICONS.ccw, 'Shift+R'),
     b('cw', { type: 'rotate', quarterTurns: 1 }, 'btn.rotate_cw', ICONS.cw, 'R'),
-    // One button, two meanings: it offers whichever view the user is not in.
-    b('fit', { type: 'zoom_toggle' }, fit ? 'btn.actual' : 'btn.fit',
-      fit ? ICONS.actual : ICONS.fit, fit ? '1' : '0'),
+    // Shows the fit in use; a press steps whole -> width -> height (zoomed:
+    // back to fit). 1:1 is a double-click/tap or the 1 key.
+    b('fit', { type: 'fit_cycle' }, fit ? FIT_LABEL[s.fit] : 'btn.fit', FIT_ICON[s.fit], 'W'),
     // F works everywhere (the browser build has no F11); the second key is the
     // native one, which differs by platform.
     b('fullscreen', { type: 'toggle_fullscreen' }, 'btn.fullscreen', ICONS.fullscreen,
@@ -115,17 +119,6 @@ export function buttonViews(s: ViewState, platform: Session['platform']): BtnVie
 export function tooltip(v: BtnView): string {
   const label = t(v.label);
   return v.shortcut ? `${label} (${v.shortcut})` : label;
-}
-
-/** Top-left, where phones put "back": without a keyboard there is no Esc. */
-function backButton(ctx: Ctx): HTMLButtonElement {
-  const b = el('button', 'ov-btn ov-back');
-  b.type = 'button';
-  b.innerHTML = ICONS.back; // constant markup, never data from a file
-  b.setAttribute('aria-label', t('btn.back'));
-  b.title = `${t('btn.back')} (Esc)`;
-  b.addEventListener('click', () => ctx.dispatch({ type: 'close_viewer' }));
-  return b;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLElementTagNameMap[K] {
@@ -229,7 +222,8 @@ class OverlayView {
       pos: el('span', 'ov-pos'), folder: el('span', 'ov-folder'),
     };
     title.append(...Object.values(this.parts));
-    top.append(backButton(ctx), title);
+    const [back, info] = topButtons(ctx);
+    top.append(back, title, info);
     this.unFilm = mountFilmstrip(this.bottom, ctx);
     for (const v of buttonViews(ctx.store.get(), ctx.session.platform)) {
       const btn = el('button', 'ov-btn');

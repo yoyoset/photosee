@@ -150,6 +150,13 @@ describe('settings panel: failures and validation', () => {
 });
 
 describe('settings panel: modal behaviour', () => {
+  it('has a Controls button, the way to the help panel without a ? key', () => {
+    const { ctx, panel, q } = setup();
+    panel.open();
+    q<HTMLButtonElement>('.ps-help-link').click();
+    expect(ctx.dispatch).toHaveBeenCalledWith({ type: 'toggle_help' });
+  });
+
   it('Esc closes through the panel layer and focus returns to the opener', () => {
     const { panel, ctx, opener, q } = setup();
     opener.focus();

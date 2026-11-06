@@ -28,21 +28,23 @@ export interface Navigator {
   openDir(dir: string, file?: string | null, announce?: boolean, onError?: (e: ApiError) => void): Promise<Listing | null>;
 }
 
-export function turn(ctx: Ctx, notices: HTMLElement, to: Turn): void {
-  const { store, session } = ctx;
+/** 'end': already at that end, and the hint says so. */
+export function turn(ctx: Ctx, notices: HTMLElement, to: Turn): 'moved' | 'end' | 'none' {
+  const { store } = ctx;
   const s = store.get();
   const count = s.listing?.images.length ?? 0;
-  if (count === 0) return;
+  if (count === 0) return 'none';
   const target = to === 'next' ? s.index + 1 : to === 'prev' ? s.index - 1
     : to === 'first' ? 0 : to === 'last' ? count - 1 : to;
   const index = Math.min(count - 1, Math.max(0, Math.trunc(target)));
   if (index === s.index) {
     // Only a deliberate step past an end gets a hint; first/last/goto stay quiet.
-    if (to === 'next') showLastHint(notices, session.platform);
+    if (to === 'next') showLastHint(notices);
     else if (to === 'prev') showToast(notices, t('hint.first'), HINT_TOAST_MS);
-    return;
+    return to === 'next' || to === 'prev' ? 'end' : 'none';
   }
   store.set({ index, zoom: FIT, rotation: 0 });
+  return 'moved';
 }
 
 export function createNavigator(getCtx: () => Ctx, getParts: () => NavParts): Navigator {
@@ -95,5 +97,28 @@ export function createNavigator(getCtx: () => Ctx, getParts: () => NavParts): Na
     slideshowWaiting = false;
   }
 
-  return { turn: (to) => turn(getCtx(), getParts().notices, to), changeFolder, openDir: loader.openDir };
+  return { turn: goOnPastEnds(getCtx, getParts, changeFolder), changeFolder, openDir: loader.openDir };
+}
+
+/** Past an end, the first turn only shows the hint; another one while it is
+ * up goes on to the next (previous) folder. Phones have no Ctrl+→, and "tap
+ * again" is what the user expected (2026-11-06). A held arrow key
+ * (scrubbing) never chains into the next folder; neither does a slideshow.
+ * In an empty folder there is nothing to turn, so the first one goes on. */
+function goOnPastEnds(
+  getCtx: () => Ctx, getParts: () => NavParts, changeFolder: Navigator['changeFolder'],
+): (to: Turn) => void {
+  let armed: { to: 'next' | 'prev'; until: number } | null = null;
+  return (to) => {
+    const ctx = getCtx();
+    const s = ctx.store.get();
+    const step = (to === 'next' || to === 'prev') && !s.scrubbing && s.slideshow === 'off' ? to : null;
+    const empty = s.listing !== null && s.listing.images.length === 0;
+    if (step && (empty || (armed?.to === step && Date.now() < armed.until))) {
+      armed = null;
+      return void changeFolder(step);
+    }
+    const r = turn(ctx, getParts().notices, to);
+    armed = r === 'end' && step ? { to: step, until: Date.now() + HINT_TOAST_MS } : null;
+  };
 }

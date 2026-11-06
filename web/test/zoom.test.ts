@@ -1,44 +1,60 @@
 import { describe, expect, it } from 'vitest';
 import { ZOOM_MAX, ZOOM_STEP } from '../src/constants';
+import type { FitMode } from '../src/state';
 import {
   FIT, beyondLoaded, clampPan, cssTransform, effectiveScale, fitScale, grew, isPanorama, isWholeImage,
-  panBy, requestBox, resolutionNeed, rotated, sameBox, toggleZoom, zoomActual, zoomAt, zoomStep,
+  overflows, panBy, requestBox, resolutionNeed, rotated, rotatedFit, sameBox, toggleZoom, zoomActual, zoomAt, zoomStep,
   type Box, type Geometry, type Point, type Zoom,
 } from '../src/zoom';
 
-const geo = (img: Box, view: Box = { w: 1000, h: 800 }, dpr = 1): Geometry => ({ img, view, dpr, upscale: false });
+const geo = (img: Box, view: Box = { w: 1000, h: 800 }, dpr = 1, fit: FitMode = 'contain'): Geometry =>
+  ({ img, view, dpr, fit });
 
 /** Screen position (CSS px, stage coords) of image point `p` (image px from
  * the image center), from the documented units. */
-function screenOf(z: Zoom, g: Geometry, p: Point): Point {
+function screenOf(z0: Zoom, g: Geometry, p: Point): Point {
+  const z = clampPan(z0, g);
   const s = effectiveScale(z, g) / g.dpr;
   return { x: g.view.w / 2 + z.x + p.x * s, y: g.view.h / 2 + z.y + p.y * s };
 }
-function imagePointAt(z: Zoom, g: Geometry, a: Point): Point {
+function imagePointAt(z0: Zoom, g: Geometry, a: Point): Point {
+  const z = clampPan(z0, g);
   const s = effectiveScale(z, g) / g.dpr;
   return { x: (a.x - g.view.w / 2 - z.x) / s, y: (a.y - g.view.h / 2 - z.y) / s };
 }
 
 describe('fitScale', () => {
-  it('fits the limiting axis and never upscales by default', () => {
-    expect(fitScale({ w: 4000, h: 3000 }, { w: 1000, h: 800 }, 1, false)).toBe(0.25);
-    expect(fitScale({ w: 4000, h: 3000 }, { w: 1000, h: 800 }, 2, false)).toBe(0.5);
-    expect(fitScale({ w: 200, h: 100 }, { w: 1000, h: 800 }, 1, false)).toBe(1);
-    expect(fitScale({ w: 200, h: 100 }, { w: 1000, h: 800 }, 1, true)).toBe(5);
-    // A small image on a 2x screen is 1 image px per DEVICE px: half its CSS size.
-    expect(fitScale({ w: 200, h: 100 }, { w: 1000, h: 800 }, 2, false)).toBe(1);
+  it('fits the limiting axis, and enlarges a small image to fill the view', () => {
+    expect(fitScale({ w: 4000, h: 3000 }, { w: 1000, h: 800 }, 1)).toBe(0.25);
+    expect(fitScale({ w: 4000, h: 3000 }, { w: 1000, h: 800 }, 2)).toBe(0.5);
+    // The user's complaint (2026-11-06): small scans stayed 1:1, "only a little bit" of the screen.
+    expect(fitScale({ w: 200, h: 100 }, { w: 1000, h: 800 }, 1)).toBe(5);
+    expect(fitScale({ w: 200, h: 100 }, { w: 1000, h: 800 }, 2)).toBe(10);
+  });
+  it('fit width / height fill that screen axis, whatever the other does', () => {
+    // A portrait comic page on a landscape screen: width fills, height overflows.
+    expect(fitScale({ w: 1000, h: 1500 }, { w: 1600, h: 900 }, 1, 'width')).toBe(1.6);
+    expect(fitScale({ w: 1000, h: 1500 }, { w: 1600, h: 900 }, 1, 'height')).toBe(0.6);
+    expect(fitScale({ w: 1000, h: 1500 }, { w: 1600, h: 900 }, 1, 'contain')).toBe(0.6);
+    expect(fitScale({ w: 1000, h: 1500 }, { w: 800, h: 900 }, 2, 'width')).toBe(1.6);
   });
   it('fits a panorama on its short axis, either direction', () => {
-    expect(fitScale({ w: 6000, h: 1000 }, { w: 1000, h: 800 }, 1, false)).toBe(0.8);
-    expect(fitScale({ w: 500, h: 3000 }, { w: 1000, h: 800 }, 1, true)).toBe(2);
-    expect(fitScale({ w: 500, h: 3000 }, { w: 1000, h: 800 }, 1, false)).toBe(1);
+    expect(fitScale({ w: 6000, h: 1000 }, { w: 1000, h: 800 }, 1)).toBe(0.8);
+    expect(fitScale({ w: 500, h: 3000 }, { w: 1000, h: 800 }, 1)).toBe(2);
     // 3.5:1 in a 4:1 window fits whole: short axis = image height, not max(sx, sy).
-    expect(fitScale({ w: 3500, h: 1000 }, { w: 4000, h: 1000 }, 1, false)).toBe(1);
+    expect(fitScale({ w: 3500, h: 1000 }, { w: 4000, h: 1000 }, 1)).toBe(1);
   });
   it('is 1 for degenerate input instead of NaN or Infinity', () => {
-    expect(fitScale({ w: 0, h: 10 }, { w: 1000, h: 800 }, 1, false)).toBe(1);
-    expect(fitScale({ w: 10, h: 10 }, { w: 0, h: 0 }, 1, false)).toBe(1);
-    expect(fitScale({ w: 10, h: 10 }, { w: 10, h: 10 }, 0, false)).toBe(1);
+    expect(fitScale({ w: 0, h: 10 }, { w: 1000, h: 800 }, 1)).toBe(1);
+    expect(fitScale({ w: 10, h: 10 }, { w: 0, h: 0 }, 1)).toBe(1);
+    expect(fitScale({ w: 10, h: 10 }, { w: 10, h: 10 }, 0, 'width')).toBe(1);
+  });
+  it('overflows: true only when the fitted image is bigger than the view', () => {
+    const page = { w: 1000, h: 1500 };
+    expect(overflows(geo(page, { w: 1600, h: 900 }, 1, 'width'))).toBe(true);
+    expect(overflows(geo(page, { w: 1600, h: 900 }, 1, 'contain'))).toBe(false);
+    expect(overflows(geo(page, { w: 1600, h: 900 }, 1, 'height'))).toBe(false);
+    expect(overflows(geo({ w: 6000, h: 1000 }))).toBe(true); // panorama
   });
 });
 
@@ -66,9 +82,24 @@ describe('requestBox', () => {
     // 1000 * 1.1 = 1100.0000000000002 in floating point.
     expect(requestBox(null, { w: 1000, h: 800 }, 1.1)).toEqual({ w: 1100, h: 880 });
   });
-  it('grows a panorama long axis so the short axis fills the view', () => {
+  it('grows a panorama long axis so the short axis fills the view, never past the original', () => {
     expect(requestBox({ w: 6000, h: 1000 }, { w: 1000, h: 800 }, 1)).toEqual({ w: 4800, h: 800 });
-    expect(requestBox({ w: 1000, h: 6000 }, { w: 1000, h: 800 }, 1.5)).toEqual({ w: 1500, h: 9000 });
+    // Fitting needs 1.5x here; the server cannot upscale, so the box stops at the image.
+    expect(requestBox({ w: 1000, h: 6000 }, { w: 1000, h: 800 }, 1.5)).toEqual({ w: 1500, h: 6000 });
+  });
+  it('fit width/height: one box for every page up to PANORAMA_ASPECT, known size or not', () => {
+    const view = { w: 1600, h: 900 };
+    const box = requestBox(null, view, 1, 'width');
+    expect(box).toEqual({ w: 1600, h: 4800 });
+    // The page on screen asks for the same URL as its prefetched neighbour.
+    expect(requestBox({ w: 1000, h: 1500 }, view, 1, 'width')).toEqual(box);
+    expect(requestBox(null, view, 1, 'height')).toEqual({ w: 2700, h: 900 });
+    // Longer than that: grown to the fitted size.
+    expect(requestBox({ w: 2000, h: 8000 }, view, 1, 'width')).toEqual({ w: 1600, h: 6400 });
+  });
+  it('rotatedFit swaps width and height for a quarter turn', () => {
+    expect([rotatedFit('width', 1), rotatedFit('height', 3), rotatedFit('width', 2), rotatedFit('contain', 1)])
+      .toEqual(['height', 'width', 'width', 'contain']);
   });
 });
 
@@ -108,8 +139,8 @@ describe('zoomAt', () => {
     expect(zoomStep(zoomStep(FIT, g, 1), g, -1).mode).toBe('fit');
     expect(zoomAt(FIT, g, Number.NaN).scale).toBe(0.25);
   });
-  it('never zooms a small image below 1:1', () => {
-    expect(zoomAt(FIT, geo({ w: 200, h: 100 }), 0.5)).toEqual({ mode: 'fit', scale: 1, x: 0, y: 0 });
+  it('never zooms out past fit, which for a small image is above 1:1', () => {
+    expect(zoomAt(FIT, geo({ w: 200, h: 100 }), 0.5)).toEqual({ mode: 'fit', scale: 5, x: 0, y: 0 });
   });
 });
 
@@ -129,6 +160,12 @@ describe('clampPan / panBy', () => {
     const p = geo({ w: 6000, h: 1000 });
     // Fit is 0.8: 4800x800 CSS px, so x in [-1900, 1900], y fixed.
     expect(panBy(FIT, p, -5000, 40)).toEqual({ mode: 'fit', scale: 0.8, x: -1900, y: 0 });
+  });
+  it('a fitted page that overflows opens at its top-left, and the first drag moves from there', () => {
+    const page = geo({ w: 1000, h: 1500 }, { w: 1600, h: 900 }, 1, 'width');
+    // 1600x2400 CSS px in 1600x900: y in [-750, 750]; +750 shows the top edge.
+    expect(clampPan(FIT, page)).toEqual({ mode: 'fit', scale: 1.6, x: 0, y: 750 });
+    expect(panBy(FIT, page, 0, -100)).toEqual({ mode: 'fit', scale: 1.6, x: 0, y: 650 });
   });
   it('treats NaN pan as centered', () => {
     expect(clampPan({ mode: 'actual', scale: 1, x: Number.NaN, y: 0 }, g).x).toBe(0);
@@ -159,6 +196,10 @@ describe('toggleZoom / zoomActual', () => {
     const small = geo({ w: 1200, h: 1000 });
     const z = zoomActual(FIT, small, { x: 1000, y: 800 });
     expect(z).toEqual({ mode: 'actual', scale: 1, x: -100, y: -100 });
+  });
+  it('an enlarged small image doubles instead of shrinking to 100%', () => {
+    const z = toggleZoom(FIT, geo({ w: 200, h: 100 }));
+    expect([z.mode, z.scale]).toEqual(['custom', 10]);
   });
   it('anything else -> fit, centered', () => {
     expect(toggleZoom({ mode: 'actual', scale: 1, x: 100, y: 100 }, g)).toEqual({ mode: 'fit', scale: 0.25, x: 0, y: 0 });

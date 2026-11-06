@@ -12,6 +12,7 @@ import { mountBrowser, type Browser } from './browser';
 import type { Controller } from './controller';
 import type { Ctx } from './ctx';
 import { bindGestures } from './gestures';
+import { overflows } from './zoom';
 import type { Host } from './host';
 import { bindKeys } from './keys';
 import { mountOverlay } from './overlay';
@@ -100,7 +101,10 @@ class ModeSwitcher implements Modes {
     this.viewerOffs = [
       mountOverlay(doc.getElementById('overlay') as HTMLElement, ctx),
       bindKeys(win, ctx.session.platform, (a: Action) => ctx.dispatch(a)),
-      bindGestures(stage, ctx),
+      bindGestures(stage, ctx, () => {
+        const g = this.geometry();
+        return g !== null && overflows(g);
+      }),
       bindViewerHistory(win, () => ctx.store.set({ mode: 'browser' })),
     ];
   }

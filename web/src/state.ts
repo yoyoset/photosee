@@ -6,6 +6,10 @@
 import type { ImageItem, Listing, Settings } from './api';
 
 export type ZoomMode = 'fit' | 'actual' | 'custom';
+/** What zoom mode 'fit' fills: the whole image, the width or the height.
+ * A reading preference: page turns keep it (they reset zoom to fit). */
+export type FitMode = 'contain' | 'width' | 'height';
+export const FIT_MODES: readonly FitMode[] = ['contain', 'width', 'height'];
 
 export interface ViewState {
   /** Which of the two screens is up. Added by package BR: the browser (folder
@@ -16,6 +20,7 @@ export interface ViewState {
   listing: Listing | null;
   index: number;
   zoom: { mode: ZoomMode; scale: number; x: number; y: number };
+  fit: FitMode;
   /** Display-only rotation in quarter turns, 0..3. */
   rotation: number;
   fullscreen: boolean;
@@ -32,6 +37,7 @@ export const initialState: ViewState = {
   listing: null,
   index: 0,
   zoom: { mode: 'fit', scale: 1, x: 0, y: 0 },
+  fit: 'contain',
   rotation: 0,
   fullscreen: false,
   slideshow: 'off',

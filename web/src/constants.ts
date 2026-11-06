@@ -23,15 +23,15 @@ export const ZOOM_MAX = 16;
 /** Zoom percentage toast. */
 export const ZOOM_TOAST_MS = 1000;
 
-/** Swipe page turn: fraction of viewport width, or a fast flick. */
-export const SWIPE_PAGE_FRACTION = 0.3;
-export const SWIPE_FLICK_PX_PER_MS = 0.5;
+/** Touch: a tap in this fraction of the width on either side turns the page
+ * (about thirds, like comic readers; the middle shows/hides the bars). */
+export const TAP_TURN_FRACTION = 0.3;
 /** Pull-down to close. */
 export const PULL_CLOSE_PX = 100;
 export const PULL_CLOSE_PX_PER_MS = 0.11;
 /** Single tap waits this long to rule out a double tap. */
 export const DOUBLE_TAP_MS = 300;
-/** Edge-click page turn zone, fraction of width on each side. */
+/** Mouse edge-click page turn zone, fraction of width on each side. */
 export const EDGE_CLICK_FRACTION = 0.15;
 
 /** Holding an arrow key: show thumbnails only until keys are quiet this long. */

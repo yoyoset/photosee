@@ -25,7 +25,7 @@ const PLAIN: Record<string, Action> = {
   ']': { type: 'next_folder' }, '[': { type: 'prev_folder' },
   Enter: { type: 'toggle_fullscreen' }, f: { type: 'toggle_fullscreen' },
   s: { type: 'toggle_slideshow' }, i: { type: 'toggle_info' },
-  '0': { type: 'zoom_fit' }, '1': { type: 'zoom_actual' },
+  '0': { type: 'zoom_fit' }, '1': { type: 'zoom_actual' }, w: { type: 'fit_cycle' },
   '-': { type: 'zoom_by', factor: 1 / ZOOM_STEP },
   Escape: { type: 'escape' },
 };

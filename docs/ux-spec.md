@@ -7,10 +7,17 @@ way. All numbers live in `web/src/constants.ts`; this file explains them.
 - Background pure black. Translucent backgrounds are a non-goal: WebView2
   loses its GPU fast path with them, and transparent Tauri regions swallow
   clicks.
-- Small images are not upscaled by default. They show at 1 image pixel = 1
-  *device* pixel.
+- "Fit" has three modes, kept per user in ui-state (`fit`): **whole image**
+  (default), **width** and **height**. The fit button and W step through
+  them, with a toast naming the new one.
+  - Small images are enlarged to fit, in every mode. Until 2026-11-06 they
+    stayed at 1:1; on a phone a small comic scan then filled "only a little
+    bit" of the screen (user).
+  - A fitted page bigger than the view (fit width on a tall page) opens at
+    its top-left. A drag pans it, and so does the wheel, which turns the page
+    only once that edge is reached. Taps on the sides still turn pages.
 - Panoramas (aspect > `PANORAMA_ASPECT` = 3, either direction) fit the short
-  axis. The wheel then scrolls along the long axis.
+  axis in whole-image mode. The wheel then scrolls along the long axis.
 - Image changes are instant. The slideshow can optionally fade
   (`SLIDESHOW_FADE_MS`). Under `prefers-reduced-motion` nothing animates.
 - Loading indicator: a thin top progress bar. It appears only after
@@ -29,7 +36,10 @@ way. All numbers live in `web/src/constants.ts`; this file explains them.
 - Top-left shows `file name · 23 / 412 · folder`.
 - Bottom has the filmstrip (`FILMSTRIP_THUMB_PX` = 64, current item centered,
   virtualized, static thumbnails) and a row of buttons:
-  - prev / slideshow (play-pause) / next / rotate ccw / rotate cw / fit-100% / fullscreen / settings.
+  - prev / slideshow (play-pause) / next / rotate ccw / rotate cw / fit mode / fullscreen / settings.
+- Top bar: back (left, Esc) and image info (right, I). Phones have no
+  keyboard, so every viewer key with no gesture has a button; the help panel
+  is reachable from settings ("操作说明") and lists the gestures too.
 - Every button has an `aria-label` and a tooltip with its shortcut.
 - `#live` (aria-live) announces "23 / 412, name.jpg" after each image change.
 - On touch devices, buttons are at least `TOUCH_TARGET_PX` (44) and the
@@ -45,6 +55,7 @@ way. All numbers live in `web/src/constants.ts`; this file explains them.
 | slideshow | S | S |
 | rotate cw / ccw (display only) | R / Shift+R | same |
 | fit / 100% | 0 / 1 | same |
+| fit mode: whole → width → height | W | same |
 | zoom in / out | + / − | same |
 | info / help | I / ? | same |
 | Esc | layered, see below | same |
@@ -69,7 +80,9 @@ Notes:
 - Ctrl+wheel and trackpad pinch (Chromium reports pinch as Ctrl+wheel) zoom
   around the cursor by `ZOOM_STEP` (1.25). This needs `passive: false` and
   `preventDefault`.
-- Double-click toggles fit ↔ 100%. Drag pans when zoomed.
+- Double-click toggles fit ↔ 100%. An image fitted above 100% (a small one
+  enlarged) doubles instead. Drag pans when zoomed or when the fitted image
+  is bigger than the view.
 - Clicking the outer `EDGE_CLICK_FRACTION` (15%) of either side turns the
   page, but only in fit mode. Edge zones ignore double-click.
 - Leaving 100% or custom zoom happens only by explicit action. Turning the
@@ -79,15 +92,15 @@ Notes:
   (like every zoom step), rather than moving it to the center.
 
 ## Touch
-- Horizontal swipe turns the page when it covers `SWIPE_PAGE_FRACTION` (30%)
-  of the width or moves faster than `SWIPE_FLICK_PX_PER_MS`. The image
-  follows the finger.
+- A tap on the left or right `TAP_TURN_FRACTION` (30%) of the width turns
+  the page at once (not while zoomed). There is no swipe page turn: on
+  phones the sideways swipe from the edge is the system's Back, and pages
+  kept turning by accident (user, 2026-11-06). A sideways drag does nothing.
 - Pull down to close: past `PULL_CLOSE_PX` (100) or faster than
-  `PULL_CLOSE_PX_PER_MS` (0.11). The background fades with the drag.
-- Swipe and pull work only in fit mode. When zoomed, a drag pans first and
-  turns the page only once the image edge is reached.
-- Single tap toggles the overlay, after `DOUBLE_TAP_MS` (300) to rule out a
-  double tap. Double tap zooms. Pinch zooms around the midpoint.
+  `PULL_CLOSE_PX_PER_MS` (0.11). The background fades with the drag. Only
+  when the image fits the view; otherwise a drag pans.
+- A tap in the middle toggles the overlay, after `DOUBLE_TAP_MS` (300) to
+  rule out a double tap. Double tap zooms. Pinch zooms around the midpoint.
 - Browser: a tap on a file or folder opens it (a mouse click only selects).
   A second tap within `DOUBLE_TAP_MS` is ignored. Long-press opens the item
   menu. Tree rows and toolbar buttons are 36 px under `pointer: coarse`.
@@ -118,8 +131,12 @@ opened is the implicit root.
 - Golden cases: `contracts/nav.json`.
 
 Entering a folder shows a toast with the folder name for
-`FOLDER_TOAST_MS` (1.5 s). At the last image there is no wrap-around by
-default; a hint says "已是最后一张 · Ctrl+→ 下一个文件夹".
+`FOLDER_TOAST_MS` (1.5 s). At the last image there is no wrap-around. A
+turn past it shows "已是最后一张 · 再往后翻一次进入下一个文件夹"; another
+turn while that hint is up (`HINT_TOAST_MS`) opens the next folder. The same
+holds backwards at the first image. Phones have no Ctrl+→, and "tap next
+again" is what the user expected (2026-11-06). A held arrow key and the
+slideshow never chain into the next folder this way.
 
 ## Slideshow
 - Plays from the current image. The visible pause control is the overlay
@@ -140,7 +157,8 @@ default; a hint says "已是最后一张 · Ctrl+→ 下一个文件夹".
   **replaces** the thumbnail. It never stays blurred.
 - **NAS unreachable** (`timeout` / `io` on list or image): a top banner reads
   "无法访问 \\nas\photos（超时 5s）[重试]". Images already cached keep working.
-- **Empty folder**: "此文件夹没有图片 · Ctrl+→ 下一个文件夹".
+- **Empty folder**: "此文件夹没有图片 · 往后翻进入下一个文件夹"; the first
+  turn goes on.
 
 ## Rendering details
 - Request size is fit box × `devicePixelRatio`. When DPR changes (the window

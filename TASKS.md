@@ -152,5 +152,6 @@ cold start only.
 | UI cache headers | done | index.html `no-cache`, /assets/* immutable. Without them the pane kept the old UI after a redeploy |
 | multi-user accounts | done | `PHOTOSEE_USERS` users.json: name + PIN, own ui-state/settings, isolation per `AppState`. 11-06 reworked on the user's request: first-run admin, admin creates accounts in the UI, every reader mounts their own folders from the volumes (nobody starts with whole disks). 12 server tests, 6 web tests |
 | resume last page | done | `reading {dir,file}` in each user's ui-state; server mode only |
+| phone viewer controls (11-06) | done | user report: sideways swipe collided with the phone's edge-swipe Back, small scans stayed 1:1, the end-of-folder hint named Ctrl+→. Now: tap the left/right 30% to turn, no swipe; fit whole/width/height (W, button cycles, kept in ui-state), small images enlarged, overflowing pages open at the top and scroll before turning; a second turn past the end opens the next folder; info button, "操作说明" in settings with a touch table. Web 466 -> 509 tests |
 
 Not done: CBR (6 files on 13 stay invisible), .cbz folders show a plain folder icon instead of a cover.

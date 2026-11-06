@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DOUBLE_TAP_MS, PULL_CLOSE_PX, SWIPE_FLICK_PX_PER_MS, WHEEL_COOLDOWN_MS,
+  DOUBLE_TAP_MS, PULL_CLOSE_PX, WHEEL_COOLDOWN_MS,
 } from '../src/constants';
 import {
   classifyRelease, pinchStep, TapTracker, WheelAccumulator, type Sample,
@@ -58,52 +58,42 @@ const line = (n: number, dx: number, dy: number, ms: number): Sample[] => (
   Array.from({ length: n + 1 }, (_, i) => ({ x: 500 + (dx * i) / n, y: 300 + (dy * i) / n, t: (ms * i) / n })));
 
 describe('classifyRelease', () => {
-  const W = 1000;
-  it('swipe by distance: >= 30% of width, either way', () => {
-    expect(classifyRelease(line(10, -300, 0, 2000), W, false)).toEqual({ kind: 'swipe', dir: 1 });
-    expect(classifyRelease(line(10, 300, 10, 2000), W, false)).toEqual({ kind: 'swipe', dir: -1 });
-    expect(classifyRelease(line(10, -290, 0, 2000), W, false)).toEqual({ kind: 'cancel' });
-  });
-
-  it('swipe by velocity: a short fast flick turns, a short slow drag does not', () => {
-    const fast = 60 / (SWIPE_FLICK_PX_PER_MS * 1.2);
-    expect(classifyRelease(line(4, -60, 0, fast), W, false)).toEqual({ kind: 'swipe', dir: 1 });
-    expect(classifyRelease(line(4, -60, 0, fast * 4), W, false)).toEqual({ kind: 'cancel' });
-    // A 5 ms twitch is fast but tiny.
-    expect(classifyRelease(line(2, -20, 0, 5), W, false)).toEqual({ kind: 'cancel' });
+  it('a sideways drag turns nothing, however far or fast (the phone uses it for Back)', () => {
+    expect(classifyRelease(line(10, -600, 0, 2000), false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(line(4, -200, 0, 40), false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(line(10, 400, 150, 300), false)).toEqual({ kind: 'cancel' });
   });
 
   it('pull down to close: by distance and by velocity, never upwards', () => {
-    expect(classifyRelease(line(10, 0, PULL_CLOSE_PX, 3000), W, false)).toEqual({ kind: 'pull' });
-    expect(classifyRelease(line(10, 0, PULL_CLOSE_PX - 1, 3000), W, false)).toEqual({ kind: 'cancel' });
-    expect(classifyRelease(line(4, 5, 60, 60 / 0.2), W, false)).toEqual({ kind: 'pull' });
-    expect(classifyRelease(line(4, 0, 60, 60 / 0.05), W, false)).toEqual({ kind: 'cancel' });
-    expect(classifyRelease(line(10, 0, -400, 200), W, false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(line(10, 0, PULL_CLOSE_PX, 3000), false)).toEqual({ kind: 'pull' });
+    expect(classifyRelease(line(10, 0, PULL_CLOSE_PX - 1, 3000), false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(line(4, 5, 60, 60 / 0.2), false)).toEqual({ kind: 'pull' });
+    expect(classifyRelease(line(4, 0, 60, 60 / 0.05), false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(line(10, 0, -400, 200), false)).toEqual({ kind: 'cancel' });
+    // A 5 ms twitch is fast but tiny.
+    expect(classifyRelease(line(2, 0, 20, 5), false)).toEqual({ kind: 'cancel' });
   });
 
   it('the dominant axis decides', () => {
-    expect(classifyRelease(line(10, 150, 400, 300), W, false)).toEqual({ kind: 'pull' });
-    expect(classifyRelease(line(10, 400, 150, 300), W, false)).toEqual({ kind: 'swipe', dir: -1 });
+    expect(classifyRelease(line(10, 150, 400, 300), false)).toEqual({ kind: 'pull' });
   });
 
   it('a tap stays within the slop, even with a small wobble', () => {
-    expect(classifyRelease(line(3, 3, 2, 80), W, false)).toEqual({ kind: 'tap' });
-    expect(classifyRelease(line(3, 3, 2, 80), W, true)).toEqual({ kind: 'tap' });
+    expect(classifyRelease(line(3, 3, 2, 80), false)).toEqual({ kind: 'tap' });
+    expect(classifyRelease(line(3, 3, 2, 80), true)).toEqual({ kind: 'tap' });
   });
 
   it('out-and-back is a drag, not a tap', () => {
     const s: Sample[] = [{ x: 0, y: 0, t: 0 }, { x: 80, y: 0, t: 50 }, { x: 0, y: 0, t: 100 }];
-    expect(classifyRelease(s, W, false)).toEqual({ kind: 'cancel' });
+    expect(classifyRelease(s, false)).toEqual({ kind: 'cancel' });
   });
 
-  it('nothing but taps while zoomed: swipe and pull are pans', () => {
-    expect(classifyRelease(line(10, -600, 0, 100), W, true)).toEqual({ kind: 'cancel' });
-    expect(classifyRelease(line(10, 0, 400, 100), W, true)).toEqual({ kind: 'cancel' });
+  it('nothing but taps while the drag pans: pull is a pan then', () => {
+    expect(classifyRelease(line(10, 0, 400, 100), true)).toEqual({ kind: 'cancel' });
   });
 
-  it('empty input and zero width do not throw', () => {
-    expect(classifyRelease([], W, false)).toEqual({ kind: 'cancel' });
-    expect(classifyRelease(line(10, -300, 0, 2000), 0, false)).toEqual({ kind: 'cancel' });
+  it('empty input does not throw', () => {
+    expect(classifyRelease([], false)).toEqual({ kind: 'cancel' });
   });
 });
 

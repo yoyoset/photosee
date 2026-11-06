@@ -9,6 +9,8 @@ export type Action =
   | { type: 'toggle_slideshow' }
   | { type: 'rotate'; quarterTurns: 1 | -1 }
   | { type: 'zoom_fit' } | { type: 'zoom_actual' } | { type: 'zoom_toggle' }
+  /** Back to fit when zoomed; already fitted: the next fit (whole, width, height). */
+  | { type: 'fit_cycle' }
   /** `anchor`: CSS px from the stage's top-left (the stage covers the window,
    * so this equals clientX/clientY). Omitted = the view center. */
   | { type: 'zoom_by'; factor: number; anchor?: { x: number; y: number } }

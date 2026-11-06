@@ -2,8 +2,12 @@
 // (The panel and slideshow layers register themselves.)
 
 import type { Action } from './actions';
+import { FOLDER_TOAST_MS } from './constants';
 import type { Ctx } from './ctx';
+import { showToast } from './errors';
 import type { Host } from './host';
+import { t } from './i18n';
+import { FIT_MODES } from './state';
 import { FIT, clampPan, panBy, toggleZoom, zoomActual, zoomAt, type Geometry, type Zoom } from './zoom';
 
 type ZoomAction = Extract<Action, { type: 'zoom_fit' | 'zoom_actual' | 'zoom_toggle' | 'zoom_by' | 'pan_by' }>;
@@ -28,6 +32,17 @@ export function applyZoom(ctx: Ctx, geometry: () => Geometry | null, a: ZoomActi
   const g = geometry();
   if (!g) return;
   ctx.store.set({ zoom: nextZoom(ctx.store.get().zoom, g, a) });
+}
+
+/** The fit button (and W). Zoomed: back to the fit already chosen. Fitted:
+ * the next of whole / width / height, named in a toast because the icons
+ * alone are hard to tell apart on a phone. */
+export function cycleFit(ctx: Ctx, notices: HTMLElement): void {
+  const s = ctx.store.get();
+  if (s.zoom.mode !== 'fit') return ctx.store.set({ zoom: FIT });
+  const fit = FIT_MODES[(FIT_MODES.indexOf(s.fit) + 1) % FIT_MODES.length] ?? 'contain';
+  ctx.store.set({ fit, zoom: FIT });
+  showToast(notices, t(`fit.${fit}`), FOLDER_TOAST_MS);
 }
 
 export function rotate(ctx: Ctx, geometry: () => Geometry | null, quarterTurns: 1 | -1): void {

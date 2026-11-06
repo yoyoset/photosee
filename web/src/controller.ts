@@ -4,7 +4,7 @@
 
 import type { Action } from './actions';
 import { createNavigator, type NavParts, type Navigator } from './controller-nav';
-import { applyZoom, registerEscLayers, rotate, toggleFullscreen } from './controller-view';
+import { applyZoom, cycleFit, registerEscLayers, rotate, toggleFullscreen } from './controller-view';
 import type { Ctx } from './ctx';
 import type { Host } from './host';
 import type { PanelHandle } from './help';
@@ -42,6 +42,7 @@ export function createController(getCtx: () => Ctx, getParts: () => Parts): Cont
       case 'rotate': return rotate(ctx, () => parts.viewer.geometry(), a.quarterTurns);
       case 'zoom_fit': case 'zoom_actual': case 'zoom_toggle': case 'zoom_by': case 'pan_by':
         return applyZoom(ctx, () => parts.viewer.geometry(), a);
+      case 'fit_cycle': return cycleFit(ctx, parts.notices);
       case 'toggle_info': return parts.info.toggle();
       case 'toggle_help': return parts.help.toggle();
       case 'open_settings': return parts.settings.open();

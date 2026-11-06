@@ -11,7 +11,7 @@
 //   clientX/clientY unchanged.
 
 import { PANORAMA_ASPECT, ZOOM_MAX, ZOOM_STEP } from './constants';
-import type { ViewState } from './state';
+import type { FitMode, ViewState } from './state';
 
 export interface Box { w: number; h: number }
 export interface Point { x: number; y: number }
@@ -24,11 +24,16 @@ export interface Geometry {
   /** Stage size, CSS px. */
   view: Box;
   dpr: number;
-  /** Allow fit to exceed 100%. Off for real images (small ones stay 1:1). */
-  upscale: boolean;
+  /** Which edge "fit" fills (ViewState.fit). */
+  fit: FitMode;
 }
 
-export const FIT: Zoom = { mode: 'fit', scale: 1, x: 0, y: 0 };
+/** A page that is bigger than the view once fitted (fit width on a tall
+ * comic page) opens at its top-left, where reading starts, not its middle:
+ * a pan this large is clamped to that corner by clampPan, and to 0 on an
+ * axis that fits. Every helper below clamps before it moves from it. */
+const START = 1e9;
+export const FIT: Zoom = { mode: 'fit', scale: 1, x: START, y: START };
 
 const valid = (b: Box): boolean => b.w > 0 && b.h > 0 && Number.isFinite(b.w) && Number.isFinite(b.h);
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
@@ -46,32 +51,55 @@ export function rotated(img: Box, quarterTurns: number): Box {
   return Math.abs(quarterTurns) % 2 === 1 ? { w: img.h, h: img.w } : img;
 }
 
-/** Scale that fits `img` in `view` (CSS px); capped at 1 unless `upscale`.
- * A panorama fits its short axis instead, so it fills the view across and
- * pans along its length. */
-export function fitScale(img: Box, view: Box, dpr: number, upscale: boolean): number {
+/** Scale that fits `img` in `view` (CSS px) for `mode`. Small images are
+ * enlarged too: the user reads comics on phones, and a 700 px scan shown
+ * 1:1 on a 1080 px screen was "only a little bit" of it (2026-11-06).
+ * 'contain' shows the whole image, except that a panorama fits its short
+ * axis, so it fills the view across and pans along its length. */
+export function fitScale(img: Box, view: Box, dpr: number, mode: FitMode = 'contain'): number {
   if (!valid(img) || !valid(view) || !(dpr > 0)) return 1;
   const sx = (view.w * dpr) / img.w;
   const sy = (view.h * dpr) / img.h;
+  if (mode === 'width') return sx;
+  if (mode === 'height') return sy;
   // Not max(sx, sy): a 3.5:1 image in a 4:1 window would then overflow
   // vertically although it fits whole. The short axis is the image's own.
-  const s = isPanorama(img) ? (img.w > img.h ? sy : sx) : Math.min(sx, sy);
-  return upscale ? s : Math.min(s, 1);
+  return isPanorama(img) ? (img.w > img.h ? sy : sx) : Math.min(sx, sy);
 }
 
-/** Device-px box for /img. `img` null = size not known yet: then the screen
- * box is right, because the server fits inside it and never upscales. A
- * panorama's long axis is grown so that its short axis fills the view. */
-export function requestBox(img: Box | null, view: Box, dpr: number): Box {
+/** True when the fitted image is bigger than the view, so a drag or the
+ * wheel moves it instead of turning the page (fit width/height, panoramas). */
+export function overflows(g: Geometry): boolean {
+  const s = fitScale(g.img, g.view, g.dpr, g.fit) / g.dpr;
+  return g.img.w * s > g.view.w + 0.5 || g.img.h * s > g.view.h + 0.5;
+}
+
+/** Device-px box for /img. The server fits the image inside it and never
+ * upscales. Fit width/height reach PANORAMA_ASPECT times past the screen on
+ * the free axis, so any page up to that shape comes back sharp from the
+ * first request. That box does not depend on the image, which keeps
+ * prefetched neighbours (size unknown) and the page on screen on one URL.
+ * A longer image (known `img`) grows the box to its fitted size. */
+export function requestBox(img: Box | null, view: Box, dpr: number, mode: FitMode = 'contain'): Box {
   const base = { w: ceilPx(view.w * dpr), h: ceilPx(view.h * dpr) };
-  if (!img || !isPanorama(img)) return base;
-  const s = fitScale(img, view, dpr, true);
+  if (mode === 'width') base.h = Math.max(base.h, ceilPx(view.w * dpr * PANORAMA_ASPECT));
+  if (mode === 'height') base.w = Math.max(base.w, ceilPx(view.h * dpr * PANORAMA_ASPECT));
+  if (!img || !valid(img)) return base;
+  // Capped at 1: past the original the server only sends the original.
+  const s = Math.min(1, fitScale(img, view, dpr, mode));
   return { w: Math.max(base.w, ceilPx(img.w * s)), h: Math.max(base.h, ceilPx(img.h * s)) };
+}
+
+/** Fit width/height name screen axes; the request box is in image axes, so
+ * a quarter turn swaps them. */
+export function rotatedFit(mode: FitMode, quarterTurns: number): FitMode {
+  if (mode === 'contain' || Math.abs(quarterTurns) % 2 === 0) return mode;
+  return mode === 'width' ? 'height' : 'width';
 }
 
 /** The scale actually on screen for a zoom state. */
 export function effectiveScale(z: Zoom, g: Geometry): number {
-  if (z.mode === 'fit') return fitScale(g.img, g.view, g.dpr, g.upscale);
+  if (z.mode === 'fit') return fitScale(g.img, g.view, g.dpr, g.fit);
   if (z.mode === 'actual') return 1;
   return z.scale > 0 ? z.scale : 1;
 }
@@ -97,8 +125,9 @@ function centered(g: Geometry, anchor?: Point): Point {
 /** Multiply the scale by `factor` around `anchor`: the image point under the
  * anchor stays put. Clamped to [fit, ZOOM_MAX]; landing on fit gives mode
  * 'fit' so later resizes keep fitting. */
-export function zoomAt(z: Zoom, g: Geometry, factor: number, anchor?: Point): Zoom {
-  const fit = fitScale(g.img, g.view, g.dpr, g.upscale);
+export function zoomAt(z0: Zoom, g: Geometry, factor: number, anchor?: Point): Zoom {
+  const z = clampPan(z0, g);
+  const fit = fitScale(g.img, g.view, g.dpr, g.fit);
   const s0 = effectiveScale(z, g);
   const f = factor > 0 && Number.isFinite(factor) ? factor : 1;
   const s1 = clamp(s0 * f, fit, Math.max(fit, ZOOM_MAX));
@@ -117,19 +146,25 @@ export function zoomStep(z: Zoom, g: Geometry, dir: 1 | -1, anchor?: Point): Zoo
 /** 100% around `anchor`: the image point under the cursor stays under it,
  * the same rule as every zoom step (docs/ux-spec.md, mouse section). No
  * anchor zooms around the view center. */
-export function zoomActual(z: Zoom, g: Geometry, anchor?: Point): Zoom {
+export function zoomActual(z0: Zoom, g: Geometry, anchor?: Point): Zoom {
+  const z = clampPan(z0, g);
   const s0 = effectiveScale(z, g);
   const a = centered(g, anchor);
   return clampPan({ mode: 'actual', scale: 1, x: a.x - (a.x - z.x) / s0, y: a.y - (a.y - z.y) / s0 }, g);
 }
 
-/** Double-click / `zoom_toggle`: fit -> 100% at the anchor; anything else -> fit. */
+/** Double-click / `zoom_toggle`: fit -> a closer look at the anchor, else
+ * back to fit. Closer is 100% for an image fitted below that; an enlarged
+ * small image is already past 100%, so it doubles instead of shrinking. */
 export function toggleZoom(z: Zoom, g: Geometry, anchor?: Point): Zoom {
-  return z.mode === 'fit' ? zoomActual(z, g, anchor) : clampPan(FIT, g);
+  if (z.mode !== 'fit') return clampPan(FIT, g);
+  const fit = fitScale(g.img, g.view, g.dpr, g.fit);
+  return fit < 1 ? zoomActual(z, g, anchor) : zoomAt(z, g, 2, anchor);
 }
 
 /** Drag / `pan_by`, clamped. */
-export function panBy(z: Zoom, g: Geometry, dx: number, dy: number): Zoom {
+export function panBy(z0: Zoom, g: Geometry, dx: number, dy: number): Zoom {
+  const z = clampPan(z0, g);
   return clampPan({ ...z, x: z.x + dx, y: z.y + dy }, g);
 }
 

@@ -90,7 +90,7 @@ describe('progressive display', () => {
     expect(h.el.style.visibility).toBe('hidden');
     await h.resolve(thumb(0), 256, 192);
     expect(h.el.getAttribute('src')).toBe(thumb(0));
-    expect(h.v.geometry()?.upscale).toBe(true); // the thumbnail stands in, scaled to fit
+    expect(h.v.geometry()?.fit).toBe('contain'); // the thumbnail stands in, scaled to fit
     await h.resolve(img(0));
     expect(h.el.getAttribute('src')).toBe(img(0));
     expect(h.shown).toEqual([0]);
@@ -100,7 +100,7 @@ describe('progressive display', () => {
     const h = harness();
     await h.resolve(img(0));
     await h.meta(0, 4000, 3000);
-    expect(h.v.geometry()).toEqual({ img: { w: 4000, h: 3000 }, view: { w: 1000, h: 800 }, dpr: 1, upscale: false });
+    expect(h.v.geometry()).toEqual({ img: { w: 4000, h: 3000 }, view: { w: 1000, h: 800 }, dpr: 1, fit: 'contain' });
     expect([h.el.style.width, h.el.style.height]).toEqual(['4000px', '3000px']);
     expect(h.el.style.transform).toContain('scale(0.25)');
   });
@@ -247,10 +247,10 @@ describe('resolution changes', () => {
 });
 
 describe('drag feedback (K)', () => {
-  it('follows --drag-x/--drag-y and fades the backdrop with --pull', async () => {
+  it('follows --drag-y and fades the backdrop with --pull', async () => {
     const h = harness();
     await h.resolve(img(0));
-    expect(h.el.style.transform.startsWith('translate(var(--drag-x, 0px), var(--drag-y, 0px)) translate(')).toBe(true);
+    expect(h.el.style.transform.startsWith('translate(0px, var(--drag-y, 0px)) translate(')).toBe(true);
     expect(h.stage.style.backgroundColor).toBe('rgb(0 0 0 / calc(1 - var(--pull, 0)))');
   });
   it('snaps back with a short transition only after a drag on the same image', async () => {

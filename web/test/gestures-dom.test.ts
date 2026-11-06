@@ -2,59 +2,11 @@
 // covered purely in gestures.test.ts.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Action } from '../src/actions';
-import type { Api, ImageSource, Session } from '../src/api';
 import {
   DOUBLE_TAP_MS, WHEEL_COOLDOWN_MS, WHEEL_PAGE_DELTA, ZOOM_STEP,
 } from '../src/constants';
-import type { Ctx } from '../src/ctx';
-import { bindGestures } from '../src/gestures';
-import { EscStack, Store, type ViewState } from '../src/state';
-
-const W = 1000;
-const H = 600;
-let el: HTMLElement;
-let store: Store;
-let seen: Action[];
-let off: () => void;
-
-function mount(patch: Partial<ViewState> = {}): void {
-  seen = [];
-  store = new Store();
-  store.set(patch);
-  const ctx: Ctx = {
-    store, esc: new EscStack(), dispatch: (a) => seen.push(a),
-    api: {} as Api, src: {} as ImageSource, session: {} as Session,
-  };
-  el = document.createElement('div');
-  el.getBoundingClientRect = () => ({ left: 0, top: 0, width: W, height: H, right: W, bottom: H, x: 0, y: 0, toJSON: () => ({}) });
-  document.body.append(el);
-  off = bindGestures(el, ctx);
-}
-
-const zoomedState: Partial<ViewState> = { zoom: { mode: 'actual', scale: 1, x: 0, y: 0 } };
-
-function ptr(type: string, x: number, y: number, t: number, o: { id?: number; kind?: string; button?: number } = {}): PointerEvent {
-  const e = new PointerEvent(type, {
-    clientX: x, clientY: y, pointerId: o.id ?? 1, pointerType: o.kind ?? 'touch',
-    button: o.button ?? 0, bubbles: true, cancelable: true,
-  });
-  Object.defineProperty(e, 'timeStamp', { value: t });
-  el.dispatchEvent(e);
-  return e;
-}
-
-function drag(pts: [number, number, number][], kind = 'touch', id = 1): void {
-  pts.forEach(([x, y, t], i) => ptr(i === 0 ? 'pointerdown' : 'pointermove', x, y, t, { kind, id }));
-  const [x, y, t] = pts[pts.length - 1] as [number, number, number];
-  ptr('pointerup', x, y, t, { kind, id });
-}
-
-function wheel(o: WheelEventInit, t: number): WheelEvent {
-  const e = new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX: 300, clientY: 200, ...o });
-  Object.defineProperty(e, 'timeStamp', { value: t });
-  el.dispatchEvent(e);
-  return e;
-}
+import type { ViewState } from '../src/state';
+import { drag, el, mount, off, ptr, seen, store, wheel, zoomedState } from './gesture-rig';
 
 beforeEach(() => { vi.useFakeTimers(); mount(); });
 afterEach(() => { off(); el.remove(); vi.useRealTimers(); });
@@ -185,10 +137,11 @@ describe('touch', () => {
     expect(el.style.touchAction).toBe('');
   });
 
-  it('swipe left past 30% turns to the next page; swipe right to the previous', () => {
+  it('a sideways swipe never turns the page: the phone uses it for Back', () => {
     drag([[800, 300, 0], [600, 300, 100], [480, 305, 200]]);
-    drag([[200, 300, 1000], [400, 300, 1100], [520, 300, 1200]]);
-    expect(seen).toEqual([{ type: 'next' }, { type: 'prev' }]);
+    drag([[5, 300, 1000], [200, 300, 1050], [520, 300, 1100]]);
+    vi.advanceTimersByTime(2000);
+    expect(seen).toEqual([]);
   });
 
   it('a short drag snaps back: no action', () => {
@@ -201,16 +154,15 @@ describe('touch', () => {
     expect(seen).toEqual([{ type: 'escape' }]);
   });
 
-  it('publishes drag feedback as CSS custom properties and clears it on release', () => {
+  it('publishes pull feedback as CSS custom properties and clears it on release', () => {
     ptr('pointerdown', 500, 300, 0);
     ptr('pointermove', 400, 305, 50);
-    expect(el.style.getPropertyValue('--drag-x')).toBe('-100px');
-    expect(el.dataset.dragging).toBe('x');
+    expect(el.dataset.dragging).toBeUndefined(); // sideways: the image stays put
     ptr('pointermove', 480, 380, 100);
     expect(el.dataset.dragging).toBe('y');
     expect(el.style.getPropertyValue('--drag-y')).toBe('80px');
     expect(Number(el.style.getPropertyValue('--pull'))).toBeCloseTo(0.8);
-    expect(el.style.getPropertyValue('--drag-x')).toBe('0px');
+    expect(el.style.getPropertyValue('--drag-x')).toBe('');
     ptr('pointerup', 480, 380, 3000);
     expect(el.style.getPropertyValue('--pull')).toBe('');
     expect(el.dataset.dragging).toBeUndefined();
@@ -218,8 +170,8 @@ describe('touch', () => {
 
   it('pointercancel clears the feedback without an action', () => {
     ptr('pointerdown', 500, 300, 0);
-    ptr('pointermove', 100, 300, 50);
-    ptr('pointercancel', 100, 300, 60);
+    ptr('pointermove', 500, 380, 50);
+    ptr('pointercancel', 500, 380, 60);
     expect(el.dataset.dragging).toBeUndefined();
     expect(seen).toEqual([]);
   });
@@ -248,8 +200,8 @@ describe('touch: taps', () => {
 
   it('two taps far apart are two overlay toggles, not a zoom', () => {
     const before = store.get().overlayVisible;
-    drag([[100, 300, 0], [100, 300, 40]]);
-    drag([[800, 300, 150], [800, 300, 190]]);
+    drag([[350, 300, 0], [350, 300, 40]]);
+    drag([[650, 300, 150], [650, 300, 190]]);
     vi.advanceTimersByTime(2000);
     expect(seen).toEqual([]);
     expect(store.get().overlayVisible).toBe(before); // toggled twice

@@ -22,7 +22,8 @@
     28px calc(env(safe-area-inset-left, 0px) + 16px);
   background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
 }
-.ov-back { flex: none; pointer-events: auto; margin: -6px 0; }
+.ov-back, .ov-info { flex: none; pointer-events: auto; margin: -6px 0; }
+.ov-info { margin-left: auto; }
 /* Only the stem shrinks, so the extension always stays visible. */
 .ov-title { min-width: 0; display: flex; white-space: pre; text-shadow: 0 1px 3px #000; }
 .ov-stem, .ov-folder { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

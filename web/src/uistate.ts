@@ -10,6 +10,7 @@ import {
 } from './browser-consts';
 import { samePath } from './browser-path';
 import { SORT_KEYS, type SortDir, type SortKey } from './browser-sort';
+import { FIT_MODES, type FitMode } from './state';
 
 export type ViewMode = 'grid' | 'details' | 'single';
 
@@ -27,6 +28,8 @@ export interface UiState {
   recentPaused: boolean;
   /** Multi-user server: the page last on screen in the viewer (resume.ts). */
   reading: { dir: string; file: string } | null;
+  /** The viewer's fit (whole / width / height): a reading habit, kept. */
+  fit: FitMode;
   [unknown: string]: unknown;
 }
 
@@ -41,7 +44,7 @@ export function defaultUiState(): UiState {
   return {
     version: 1, tree: { visible: true, width: TREE_DEFAULT_PX }, view: 'grid',
     sort: { key: 'name', dir: 'asc' }, thumb: THUMB_DEFAULT_PX, names: true,
-    recent: [], network: [], last: null, recentPaused: false, reading: null,
+    recent: [], network: [], last: null, recentPaused: false, reading: null, fit: 'contain',
   };
 }
 
@@ -67,6 +70,7 @@ export function parseUiState(raw: unknown): UiState {
     last: typeof last === 'string' && last !== '' ? last : null,
     recentPaused: raw['recentPaused'] === true,
     reading: parseReading(raw['reading']),
+    fit: FIT_MODES.find((m) => m === raw['fit']) ?? 'contain',
   };
 }
 

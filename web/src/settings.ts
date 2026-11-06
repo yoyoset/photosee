@@ -192,6 +192,10 @@ export function mountSettings(root: HTMLElement, ctx: Ctx): PanelHandle {
     onOpen: () => form.load(),
     onClose: () => form.flush(),
   });
-  modal.body.append(form.el);
+  // The only way to the help panel without a keyboard (? on a phone).
+  const help = el('button', 'ps-help-link', t('help.open'));
+  help.type = 'button';
+  help.addEventListener('click', () => ctx.dispatch({ type: 'toggle_help' }));
+  modal.body.append(form.el, help);
   return modal;
 }

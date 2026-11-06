@@ -4,6 +4,7 @@
 // `zh` keys, so tsc fails on a key that exists in only one language.
 
 import { EN_ACCOUNT, ZH_ACCOUNT } from './i18n-account';
+import { EN_TOUCH, ZH_TOUCH } from './i18n-touch';
 
 export type Lang = 'zh' | 'en';
 
@@ -24,11 +25,12 @@ const zh = {
   'btn.settings': '设置',
   'btn.back': '返回浏览',
   ...ZH_ACCOUNT,
+  ...ZH_TOUCH,
   'err.unauthorized': '需要重新登录',
   'live.position': '{n} / {total}，{name}',
-  'hint.first': '已是第一张',
-  'hint.last': '已是最后一张 · {key} 下一个文件夹',
-  'hint.empty_folder': '此文件夹没有图片 · {key} 下一个文件夹',
+  'hint.first': '已是第一张 · 再往前翻一次进入上一个文件夹',
+  'hint.last': '已是最后一张 · 再往后翻一次进入下一个文件夹',
+  'hint.empty_folder': '此文件夹没有图片 · 往后翻进入下一个文件夹',
   'hint.no_next_folder': '没有下一个文件夹了',
   'hint.browser_fullscreen': '浏览器版：按 F 进入全屏，Esc 和 F11 由浏览器处理',
   'slideshow.ended': '幻灯片已结束',
@@ -64,7 +66,7 @@ const zh = {
   'settings.wheel': '滚轮',
   'settings.wheel.navigate': '翻页',
   'settings.wheel.zoom': '缩放',
-  'help.title': '快捷键',
+  'help.title': '操作说明',
   'help.first_last': '第一张 / 最后一张',
   'help.folder': '下一个 / 上一个文件夹',
   'help.zoom': '放大 / 缩小',
@@ -139,11 +141,12 @@ const en: Record<Key, string> = {
   'btn.settings': 'Settings',
   'btn.back': 'Back to folders',
   ...EN_ACCOUNT,
+  ...EN_TOUCH,
   'err.unauthorized': 'Please log in again',
   'live.position': '{n} of {total}, {name}',
-  'hint.first': 'First image',
-  'hint.last': 'Last image · {key} for the next folder',
-  'hint.empty_folder': 'No images in this folder · {key} for the next folder',
+  'hint.first': 'First image · go back once more for the previous folder',
+  'hint.last': 'Last image · go on once more for the next folder',
+  'hint.empty_folder': 'No images in this folder · go on for the next folder',
   'hint.no_next_folder': 'No more folders',
   'hint.browser_fullscreen': 'Browser version: press F for fullscreen; Esc and F11 belong to the browser',
   'slideshow.ended': 'Slideshow finished',
@@ -179,7 +182,7 @@ const en: Record<Key, string> = {
   'settings.wheel': 'Mouse wheel',
   'settings.wheel.navigate': 'Turns pages',
   'settings.wheel.zoom': 'Zooms',
-  'help.title': 'Keyboard shortcuts',
+  'help.title': 'Controls',
   'help.first_last': 'First / last image',
   'help.folder': 'Next / previous folder',
   'help.zoom': 'Zoom in / out',

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Session } from '../src/api';
 import type { Ctx } from '../src/ctx';
-import { helpRows, mountHelp } from '../src/help';
+import { helpRows, mountHelp, touchRows } from '../src/help';
 import { setLang } from '../src/i18n';
 import { EscStack, Store } from '../src/state';
 
@@ -15,6 +15,30 @@ function ctxFor(platform: Session['platform']): Ctx {
 beforeEach(() => {
   setLang('en');
   document.body.replaceChildren();
+});
+
+describe('help: touch', () => {
+  it('lists every gesture in words, none of them a key', () => {
+    const rows = touchRows();
+    expect(rows.length).toBeGreaterThanOrEqual(7);
+    for (const r of rows) {
+      expect(r.label).not.toBe('');
+      expect(r.keys.join(' ')).not.toMatch(/Ctrl|⌘|Esc/);
+    }
+    expect(rows.map((r) => r.keys).flat()).toContain('Tap the right side');
+  });
+
+  it('the panel shows both tables, touch first on a touch screen', () => {
+    const mq = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)' })) as unknown as typeof window.matchMedia;
+    try {
+      mountHelp(document.body, ctxFor('linux')).open();
+      const heads = [...document.querySelectorAll('.ps-help-sub')].map((h) => h.textContent);
+      expect(heads).toEqual(['Touch', 'Keyboard']);
+    } finally {
+      window.matchMedia = mq;
+    }
+  });
 });
 
 describe('help', () => {

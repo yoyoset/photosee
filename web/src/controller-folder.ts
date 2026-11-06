@@ -66,7 +66,7 @@ export function createFolderLoader(
     ctx.store.set({ listing, index: Math.max(0, found), zoom: FIT, rotation: 0 });
     // An image-less folder is normal in the browser (subfolders only); the
     // "no images" notice belongs to the viewer.
-    if (listing.images.length === 0 && ctx.store.get().mode === 'viewer') dismissEmpty = showEmptyFolder(getNotices(), ctx.session.platform);
+    if (listing.images.length === 0 && ctx.store.get().mode === 'viewer') dismissEmpty = showEmptyFolder(getNotices());
     else if (announce) showToast(getNotices(), folderName(listing.dir), FOLDER_TOAST_MS);
     return listing;
   }

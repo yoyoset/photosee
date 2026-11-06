@@ -1,5 +1,7 @@
-// Help panel (key ?): the shortcut table for this platform, plus the Modal
-// shell that settings.ts reuses. Package L.
+// Help panel (key ?, or "Controls" in settings): the touch gestures and the
+// shortcut table for this platform, plus the Modal shell that settings.ts
+// reuses. Package L. On a touch screen the gestures come first: a phone has
+// no keyboard and could not open this with ? anyway.
 //
 // Why Modal lives here: package L owns a fixed list of files
 // (docs/ownership.toml), and EscStack keeps ONE handler per layer, so two
@@ -147,6 +149,7 @@ const ROWS: readonly Row[] = [
   { label: 'btn.rotate_cw', keys: ['R'] },
   { label: 'btn.rotate_ccw', keys: ['Shift+R'] },
   { label: 'btn.fit', keys: ['0'] },
+  { label: 'help.fit_cycle', keys: ['W'] },
   { label: 'btn.actual', keys: ['1'] },
   { label: 'help.zoom', keys: ['+', '−'] },
   { label: 'help.info', keys: ['I'] },
@@ -163,10 +166,30 @@ export function helpRows(platform: Session['platform']): { label: string; keys: 
   }));
 }
 
-function buildTable(platform: Session['platform']): HTMLTableElement {
+// Mirrors docs/ux-spec.md §Touch; gestures are words, not keys.
+const TOUCH: readonly (readonly [Key, readonly Key[]])[] = [
+  ['btn.prev', ['touch.tap_left']],
+  ['btn.next', ['touch.tap_right']],
+  ['touch.bars', ['touch.tap_mid']],
+  ['help.folder', ['touch.again_last', 'touch.again_first']],
+  ['help.zoom', ['touch.pinch', 'touch.double']],
+  ['touch.pan', ['touch.drag']],
+  ['help.info', ['touch.info_btn']],
+  ['btn.back', ['touch.pull']],
+];
+
+export function touchRows(): { label: string; keys: string[] }[] {
+  return TOUCH.map(([label, keys]) => ({ label: t(label), keys: keys.map((k) => t(k)) }));
+}
+
+function section(title: Key, rows: { label: string; keys: string[] }[]): HTMLElement[] {
+  return [el('h3', 'ps-help-sub', t(title)), buildTable(rows)];
+}
+
+function buildTable(rows: { label: string; keys: string[] }[]): HTMLTableElement {
   const table = el('table', 'ps-help-table');
   const tbody = el('tbody');
-  for (const row of helpRows(platform)) {
+  for (const row of rows) {
     const tr = el('tr');
     const th = el('th', '', row.label);
     th.scope = 'row';
@@ -181,6 +204,9 @@ function buildTable(platform: Session['platform']): HTMLTableElement {
 
 export function mountHelp(root: HTMLElement, ctx: Ctx): PanelHandle {
   const modal = new Modal(root, ctx, 'help.title', 'ps-help');
-  modal.body.append(buildTable(ctx.session.platform));
+  const touch = section('help.touch', touchRows());
+  const keys = section('help.keys', helpRows(ctx.session.platform));
+  const coarse = root.ownerDocument.defaultView?.matchMedia?.('(pointer: coarse)').matches ?? false;
+  modal.body.append(...(coarse ? [...touch, ...keys] : [...keys, ...touch]));
   return modal;
 }

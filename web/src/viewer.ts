@@ -9,8 +9,8 @@
 // would break "one <img>" that package L's fade class and K's gestures rely on.
 //
 // Motion: image changes and zoom are instant. The one animation is the
-// snap-back after a touch drag that did not turn the page (K's --drag-x /
-// --drag-y / --pull / data-dragging on the stage); it is skipped under
+// snap-back after a pull-down that did not close (K's --drag-y / --pull /
+// data-dragging on the stage); it is skipped under
 // prefers-reduced-motion. The slideshow fade is package L's class on the stage.
 
 import type { ApiError, ImageItem } from './api';
@@ -26,7 +26,7 @@ import {
 import type { ViewState } from './state';
 export type { ViewerEnv } from './prefetch';
 import {
-  cssTransform, effectiveScale, isWholeImage, requestBox, resolutionNeed, rotated, sameBox,
+  cssTransform, effectiveScale, isWholeImage, requestBox, resolutionNeed, rotated, rotatedFit, sameBox,
   type Box, type Geometry,
 } from './zoom';
 
@@ -68,9 +68,9 @@ interface Cur {
 }
 
 const natural = (img: HTMLImageElement): Box => ({ w: img.naturalWidth, h: img.naturalHeight });
-// K's live drag offset goes first, i.e. it applies in screen space on top of
-// the fitted transform; it is 0 whenever K is not dragging.
-const DRAG = 'translate(var(--drag-x, 0px), var(--drag-y, 0px)) ';
+// K's live pull-down offset goes first, i.e. it applies in screen space on
+// top of the fitted transform; it is 0 whenever K is not dragging.
+const DRAG = 'translate(0px, var(--drag-y, 0px)) ';
 
 class StageView implements Viewer {
   readonly element = document.createElement('img');
@@ -120,23 +120,22 @@ class StageView implements Viewer {
     const cur = this.cur;
     const size = cur && !cur.failed ? (cur.meta ?? cur.full?.natural ?? cur.thumb) : null;
     if (!cur || !size) return null;
-    // Only a bare thumbnail is upscaled: it stands in for a bigger image.
-    const upscale = !cur.meta && !cur.full;
-    return { img: rotated(size, this.ctx.store.get().rotation), view: this.env.view(), dpr: this.env.dpr(), upscale };
+    const { rotation, fit } = this.ctx.store.get();
+    return { img: rotated(size, rotation), view: this.env.view(), dpr: this.env.dpr(), fit };
   }
 
   private onState(s: ViewState, prev: ViewState): void {
     if (s.listing !== prev.listing || s.index !== prev.index) return this.show();
     const cur = this.cur;
     if (prev.scrubbing && !s.scrubbing && cur && !cur.asked && !cur.failed) this.loadFull(cur, this.neededBox(cur));
-    if (s.zoom !== prev.zoom || s.rotation !== prev.rotation) this.update();
+    if (s.zoom !== prev.zoom || s.rotation !== prev.rotation || s.fit !== prev.fit) this.update();
   }
 
   private show(): void {
     const s = this.ctx.store.get();
     const item = s.listing?.images[s.index];
     this.dropCard();
-    this.snap.cancel(); // a swipe that turned the page shows the new image in place
+    this.snap.cancel(); // a new page shows in place, never snapping back
     const cur: Cur | null = item
       ? { index: s.index, item, meta: null, thumb: null, full: null, want: null, asked: false, failed: false }
       : null;
@@ -172,8 +171,9 @@ class StageView implements Viewer {
   /** The device-px box for `cur` now. The server's box is in unrotated
    * image axes, so the view is rotated instead of the image. */
   private neededBox(cur: Cur): Box {
-    const view = rotated(this.env.view(), this.ctx.store.get().rotation);
-    return requestBox(cur.meta ?? cur.full?.natural ?? cur.thumb, view, this.env.dpr());
+    const { rotation, fit } = this.ctx.store.get();
+    const view = rotated(this.env.view(), rotation);
+    return requestBox(cur.meta ?? cur.full?.natural ?? cur.thumb, view, this.env.dpr(), rotatedFit(fit, rotation));
   }
 
   private loadFull(cur: Cur, box: Box | null): void {
@@ -282,7 +282,7 @@ class StageView implements Viewer {
     if (s.scrubbing) return;
     // Neighbours are guessed unrotated (a page turn resets the view) at the
     // screen box; a panorama neighbour is re-requested once its size is known.
-    const box = requestBox(null, this.env.view(), this.env.dpr());
+    const box = requestBox(null, this.env.view(), this.env.dpr(), s.fit);
     for (const i of prefetchWindow(cur.index, images.length, PREFETCH_AHEAD, PREFETCH_BEHIND)) {
       const it = images[i];
       if (!it || this.cache.lru.has(this.ctx.src.imageUrl(it.path, box, 'current'))) continue;

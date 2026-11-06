@@ -55,6 +55,8 @@ function provisional(dir: string, file: string): Listing {
 }
 
 function hintOnce(host: HTMLElement): void {
+  // "Press F" means nothing on a phone, which has no keyboard (2026-11-06).
+  if (host.ownerDocument.defaultView?.matchMedia?.('(pointer: coarse)').matches) return;
   try {
     if (localStorage.getItem('ps.fsHint')) return;
     localStorage.setItem('ps.fsHint', '1');
@@ -97,9 +99,10 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   // (nothing, or a folder) starts in the browser.
   store.set({
     settings, root: session.start?.dir ?? null, fullscreen: host.isFullscreen(),
-    mode: session.start?.file ? 'viewer' : 'browser',
+    mode: session.start?.file ? 'viewer' : 'browser', fit: ui.fit,
   });
   const prefs = new UiPrefs(ui, api);
+  const offFit = store.subscribe((s, p) => { if (s.fit !== p.fit) prefs.set({ fit: s.fit }); });
   const ctx: Ctx = {
     store, api, src: deps.src ?? new HttpImageSource(), esc: new EscStack(), session,
     dispatch: (a: Action) => controller.dispatch(a),
@@ -114,7 +117,7 @@ export async function boot(deps: BootDeps = {}): Promise<App> {
   return {
     ctx, controller, prefs, modes: mounted.modes,
     started: start(ctx, controller, mounted.parts, mounted.modes, prefs),
-    dispose() { offRecord(); mounted.dispose(); prefs.dispose(); },
+    dispose() { offRecord(); offFit(); mounted.dispose(); prefs.dispose(); },
   };
 }
 

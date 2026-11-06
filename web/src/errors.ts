@@ -5,7 +5,7 @@
 // ignores pointer events outside the card itself, so the overlay (package J)
 // only needs z-index >= 10 to stay on top of it and clickable.
 
-import type { ApiError, Session } from './api';
+import type { ApiError } from './api';
 import { HINT_TOAST_MS } from './constants';
 import { t } from './i18n';
 import './panels.css';
@@ -152,16 +152,11 @@ export function showToast(host: HTMLElement, text: string, ms: number): () => vo
   return place(host, 'ps-toast', text, ms);
 }
 
-/** The key that jumps to the next folder, as written for this platform. */
-export function nextFolderKey(platform: Session['platform']): string {
-  return platform === 'macos' ? '⌘→' : 'Ctrl+→';
-}
-
 /** Stays until dismissed (the folder is still empty); replaces, never stacks. */
-export function showEmptyFolder(host: HTMLElement, platform: Session['platform']): () => void {
-  return place(host, 'ps-notice', t('hint.empty_folder', { key: nextFolderKey(platform) }), 0);
+export function showEmptyFolder(host: HTMLElement): () => void {
+  return place(host, 'ps-notice', t('hint.empty_folder'), 0);
 }
 
-export function showLastHint(host: HTMLElement, platform: Session['platform']): () => void {
-  return showToast(host, t('hint.last', { key: nextFolderKey(platform) }), HINT_TOAST_MS);
+export function showLastHint(host: HTMLElement): () => void {
+  return showToast(host, t('hint.last'), HINT_TOAST_MS);
 }

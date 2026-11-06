@@ -136,12 +136,12 @@ describe('mountOverlay: buttons', () => {
   it.each(['windows', 'macos'] as const)('dispatches one action per button on %s', (platform) => {
     const { root, dispatch } = setup(platform);
     const btns = [...root.querySelectorAll<HTMLButtonElement>('.ov-btn')];
-    expect(btns.length).toBe(9); // back (top-left) + the eight in the bar
+    expect(btns.length).toBe(10); // back and info (top bar) + the eight in the bar
     btns.forEach((b) => b.click());
     expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
-      { type: 'close_viewer' }, { type: 'prev' }, { type: 'toggle_slideshow' }, { type: 'next' },
+      { type: 'close_viewer' }, { type: 'toggle_info' }, { type: 'prev' }, { type: 'toggle_slideshow' }, { type: 'next' },
       { type: 'rotate', quarterTurns: -1 }, { type: 'rotate', quarterTurns: 1 },
-      { type: 'zoom_toggle' }, { type: 'toggle_fullscreen' }, { type: 'open_settings' },
+      { type: 'fit_cycle' }, { type: 'toggle_fullscreen' }, { type: 'open_settings' },
     ]);
     for (const b of btns) {
       const label = b.getAttribute('aria-label') ?? '';
@@ -162,11 +162,13 @@ describe('mountOverlay: buttons', () => {
     const { root, store } = setup();
     const by = (id: string): HTMLElement => must(root.querySelector<HTMLElement>(`[data-id="${id}"]`));
     expect(by('play').title).toBe('Play slideshow (S)');
-    expect(by('fit').title).toBe('Actual size (1)');
+    expect(by('fit').title).toBe('Fit: whole image (W)');
     expect(by('settings').title).toBe('Settings');
     store.set({ slideshow: 'playing', zoom: { mode: 'actual', scale: 1, x: 0, y: 0 } });
     expect(by('play').getAttribute('aria-label')).toBe('Pause slideshow');
-    expect(by('fit').title).toBe('Fit to window (0)');
+    expect(by('fit').title).toBe('Fit to window (W)');
+    store.set({ zoom: { mode: 'fit', scale: 1, x: 0, y: 0 }, fit: 'width' });
+    expect(by('fit').title).toBe('Fit: width (W)');
   });
 
   it('follows the system language through t()', () => {

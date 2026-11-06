@@ -47,6 +47,15 @@ describe('parseUiState', () => {
 
 });
 
+describe('parseUiState: fit', () => {
+  it('keeps a known fit mode and falls back to the whole image', () => {
+    expect(parseUiState({ version: 1, fit: 'width' }).fit).toBe('width');
+    expect(parseUiState({ version: 1, fit: 'height' }).fit).toBe('height');
+    expect(parseUiState({ version: 1, fit: 'zoom' }).fit).toBe('contain');
+    expect(parseUiState({ version: 1 }).fit).toBe('contain');
+  });
+});
+
 describe('parseUiState: lists and unknown fields', () => {
   it('caps recents at 10', () => {
     const recent = Array.from({ length: 30 }, (_, i) => `/r${i}`);
