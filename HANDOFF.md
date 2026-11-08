@@ -29,6 +29,12 @@ PhotoSee 是一个只用来看图的 Windows 看图软件。Rust 核心 `core/` 
 - 两个都从 `releases/latest` 下回来核过哈希，下回来的绿色版能出图、版本号 0.2.0。基线：Rust 282 passed / 9 ignored，web 525 passed，bundle 48,258 B gzip。
 - 推送前重写过 16 个未推送的提交，把家庭网络信息换成占位符（见 §2 Docker 上面那段）。
 
+**v0.2.1（2026-11-08）已发布，现在是 latest：** https://github.com/yoyoset/photosee/releases/tag/v0.2.1
+- 改动：看图三分区点击（鼠标和触屏统一 30%），全屏时浮层默认不出现。文件大小上限放宽到 500 行。
+- `PhotoSee_0.2.1_x64-setup.exe`：4.24 MiB，sha256 `6acd65f9687b12dd84e864267087f3c82b9b2d2349bcae9a1ab54495e5f38c5b`
+- `PhotoSee-0.2.1-portable.zip`：5.95 MiB，sha256 `0599dafafba1ea2514c2da1f1d5c08be1299572e035e02c7fa41bf47c1f377b5`
+- 从 `releases/latest` 下回来核过哈希；smoke.mjs 全 PASS；解压的绿色版能出图。Docker 同步部署为 0.2.1。基线：web 531 passed。没在 pad 真机上点过。
+
 - squareuncle.com 下载页**还没上架**。上架属于 SUBLOG 仓库，排期见 `F:\my_ai\SUBLOG\video\weekly\2026-11-博客与产品排期.md`（这个文件不进 git）。
 
 ## 2. 命令（全部实跑过）
