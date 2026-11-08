@@ -9,7 +9,7 @@ import { join, relative } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const MAX_LINES = 300;
+const MAX_LINES = 500;
 const MAX_BUNDLE_GZ = 60 * 1024;
 const SOURCE_DIRS = ['core', 'server', 'app', 'web/src', 'web/test', 'tools', 'spikes'];
 const SKIP = new Set(['node_modules', 'target', 'dist', 'gen', '.git']);

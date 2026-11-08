@@ -125,7 +125,7 @@ tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && 
 ## 6. 不要做的事
 
 - 不要 `git add -A` / `git add .`。
-- 不要加新依赖，也不要放宽 300 行/文件、50 行/函数的限制（见 AGENTS.md）。真要加依赖，先写进 `docs/deps.md` 说明理由。
+- 不要加新依赖，也不要放宽 500 行/文件（用户 11-08 从 300 放宽到 500，前提是单一职责）、50 行/函数的限制（见 AGENTS.md）。真要加依赖，先写进 `docs/deps.md` 说明理由。
 - 不要让安装包改默认程序或 UserChoice。
 - 不要用 `taskkill /IM`、`Stop-Process -Name` 按名字杀进程，会把别人的 cargo/node 也杀掉。只按 PID 杀自己启动的进程。
 - 不要用用户的真实相册截图或做测试数据。

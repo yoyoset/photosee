@@ -25,7 +25,7 @@ lives with the orchestrator. Everything a worker needs is in this repo:
    truly need one, explain why in your final report. Spikes and tools that
    have their own `Cargo.toml` with an empty `[workspace]` table may pin
    their own dependencies.
-3. **Size limits are hard**: ≤300 lines per file, ≤50 lines per function.
+3. **Size limits are hard**: ≤500 lines per file (the user relaxed it from 300 on 2026-11-08, on condition that each file keeps one responsibility; split by responsibility, not to hit a number), ≤50 lines per function.
    Split by responsibility; do not raise limits or add `allow` attributes to
    dodge them.
 4. **No panics on bad input.** Every byte from a file is hostile. Bounds-check
