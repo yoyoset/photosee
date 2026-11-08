@@ -105,6 +105,9 @@ tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && 
 9. **用 bash heredoc 加 Python 往 PowerShell 脚本里写 `'app\tauri.conf.json'` 时，`\t` 变成了制表符。** 改 Windows 路径要用 Edit 工具，写完用 `grep -c $'\t'` 查一遍。
 10. **PowerShell 5.1 的 `Compress-Archive` 可能写出反斜杠路径。** 打 zip 要用 `%SystemRoot%\System32\tar.exe`（bsdtar），不能用 PATH 上 Git 带的 GNU tar。
 11. **"并行开很多 Claude 子代理"太费 token**（用户 11-04 说的）。之后一次只开一个 worker，编排者自己提交。
+12. **iPad 上每点一下，所有按钮和胶片条都弹出来；点中间则闪一下又消失**（用户 11-08，iPad mini 上用 Docker 网页版）。最初以为是旧版 JS 被 Safari 缓存了（index.html 是 `no-cache`，后来排除）。实测原因：触摸指针抬起后，浏览器会立刻在 `<html>` 上发 `pointerleave`，而自动隐藏里 `pointerleave` 的处理调用了 `hold('zone', false)`，它会"唤醒"浮层。鼠标只有离开窗口才触发，所以电脑上从来没出过问题。修法：`pointerleave` 只释放 hold，不算输入（`overlay-autohide.ts`）。测试 `overlay-fullscreen.test.ts` 先复现后修。**教训：在电脑上用鼠标点过不等于触屏没问题，改动指针/浮层逻辑要用 `pointerType: 'touch'` 的事件再测一遍。**
+13. **测试里没卸载的浮层会串到下一个测试**：浮层的监听挂在 `document` 上，漏卸载的实例会继续响应后面测试的事件，并改动全局的 `cursor-hidden` 类。`overlay.test.ts` 现在在 `afterEach` 里统一卸载。
+14. **`HANDOFF` 里 Docker 部署命令的 `$(cat VERSION)` 写在 ssh 的双引号里，会在本机展开**，本机当前目录没有 VERSION，就报 `invalid tag "photosee:"`。现在先在本机 `VER=$(cat target/docker/VERSION)` 再传进去。
 
 ## 5. 已知但还没处理的问题
 
@@ -125,6 +128,8 @@ tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && 
   - 安全：PIN 明文存放（理由见 accounts.rs 头注释），连错 5 次锁 60 秒。挑文件夹时谁都能浏览整个硬盘的目录名，所以账号是分开书架，不是保密（见 non-goals）。
   - 已挂载的文件夹被移走或删掉时，跳过并打日志，不会让服务起不来。
   - 不设 `PHOTOSEE_USERS` 就是原来的开放模式。`PHOTOSEE_PASSWORD` 仍然会拒绝启动。
+- **iPad 全屏**（用户 11-08）：iPad Safari 的网页全屏是系统控制的，有自己的"向下/向上滑退出"提示，通常还留一点浏览器边，页面改不了。想要真正没有边框，要"添加到主屏幕"后从图标打开（manifest 已配好）。用户的设备是 iPad mini，主要用 Docker 网页版。
+- **Docker 镜像内容可能比 GitHub 上同版本号的 Release 新**：11-08 为了让用户先在 iPad 上试 `pointerleave` 的修复，只重新部署了 Docker，镜像标签仍是 0.2.1；桌面版（安装包、绿色版）还带着这个 bug，影响触屏笔记本。用户确认 iPad 上正常后，应统一升 0.2.2 并重新发布。
 - 还没做：会话中途被登出（比如 users.json 删了这个人）时，页面不会自动跳到登录页，要刷新一次才会出现。
 - Docker 镜像用 musl 的默认内存分配器，多线程转码可能比 glibc 慢，没有专门对比测过。13 上 1920×1080 转码实测约 190 ms。
 - `.cbz` 的限制见 `docs/non-goals.md`：不支持 CBR/CB7/ZIP64，GBK 文件名会显示成乱码，安装包没把 .cbz 加进「打开方式」。

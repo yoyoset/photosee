@@ -40,6 +40,10 @@ way. All numbers live in `web/src/constants.ts`; this file explains them.
   reveal zone shows them, and a page turn by click/tap puts them away.
   A finger on the picture never wakes them in a window either; touching the
   bars themselves keeps them up.
+- What counts as "input" for the idle clock: pointer move/down, keys, wheel.
+  **Not** `pointerleave` on the root element: a lifted finger fires it after
+  every tap, and treating it as input brought all bars up on each page turn
+  (iPad mini, 2026-11-08). Test pointer code with `pointerType: 'touch'`.
 - Top-left shows `file name · 23 / 412 · folder`.
 - Bottom has the filmstrip (`FILMSTRIP_THUMB_PX` = 64, current item centered,
   virtualized, static thumbnails) and a row of buttons:
