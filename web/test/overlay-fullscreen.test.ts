@@ -73,4 +73,18 @@ describe('mountOverlay: fullscreen stays clean', () => {
     vi.advanceTimersByTime(OVERLAY_HIDE_MS - 10);
     expect(store.get().overlayVisible).toBe(true);
   });
+
+  // iPad mini report (2026-11-08): every tap brought all the bars up, and a middle
+  // tap flashed them and hid them again. A touch pointer fires `pointerleave` on
+  // the root element right after it lifts, and that used to count as input.
+  it('the pointerleave a lifted finger fires does not wake the bars', () => {
+    vi.useFakeTimers();
+    const { store } = setup();
+    hide(store);
+    document.documentElement.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'touch' }));
+    expect(store.get().overlayVisible).toBe(false);
+    store.set({ fullscreen: true });
+    document.documentElement.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'touch' }));
+    expect(store.get().overlayVisible).toBe(false);
+  });
 });

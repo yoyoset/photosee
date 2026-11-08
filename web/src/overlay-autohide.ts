@@ -106,7 +106,10 @@ export class AutoHide {
       else this.arm();
     };
     for (const type of ['pointermove', 'pointerdown', 'keydown', 'wheel']) on(doc, type, input);
-    on(doc.documentElement, 'pointerleave', () => hold('zone', false));
+    // A mouse leaving the window drops its hold. Not input: a lifted finger
+    // fires this too, right after every tap (iPad mini, 2026-11-08), and
+    // waking here brought every bar up on each page turn.
+    on(doc.documentElement, 'pointerleave', () => { this.bar.release('zone'); this.arm(); });
     on(bottom, 'pointerenter', () => hold('hover', true));
     on(bottom, 'pointerleave', () => hold('hover', false));
     // Only keyboard focus holds the bar: a button clicked with the mouse keeps
