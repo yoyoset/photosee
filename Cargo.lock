@@ -3187,7 +3187,7 @@ dependencies = [
 
 [[package]]
 name = "photosee-app"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "axum",
  "getrandom 0.3.4",
@@ -3206,7 +3206,7 @@ dependencies = [
 
 [[package]]
 name = "photosee-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "alphanumeric-sort",
  "fast_image_resize",
@@ -3229,7 +3229,7 @@ dependencies = [
 
 [[package]]
 name = "photosee-server"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "axum",
  "futures-util",

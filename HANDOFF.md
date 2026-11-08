@@ -47,7 +47,8 @@ cargo run --release --manifest-path tools/gen-fixtures/Cargo.toml   # 生成 fix
 **Docker（LAN 服务端，2026-11-05 起部署在 $LAN_HOST:8111）：**
 ```bash
 bash scripts/docker-stage.sh   # 本机交叉编译 musl 静态二进制 + web/dist → target/docker（约 3 分钟）
-tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && mkdir -p $DEPLOY_DIR/build && tar --no-same-owner -xzf - -C $DEPLOY_DIR/build && chmod -R a+rX $DEPLOY_DIR/build && chmod 755 $DEPLOY_DIR/build/photosee-server && cd $DEPLOY_DIR/build && docker build --build-arg VERSION=$(cat VERSION) -t photosee:local -t photosee:$(cat VERSION) . && cd $DEPLOY_DIR && docker compose up -d --force-recreate"
+VER=$(cat target/docker/VERSION)   # 必须在本机读：写进 ssh 的双引号里会在本机展开，找不到文件就报 invalid tag "photosee:"
+tar -C target/docker -czf - . | ssh root@$LAN_HOST "rm -rf $DEPLOY_DIR/build && mkdir -p $DEPLOY_DIR/build && tar --no-same-owner -xzf - -C $DEPLOY_DIR/build && chmod -R a+rX $DEPLOY_DIR/build && chmod 755 $DEPLOY_DIR/build/photosee-server && cd $DEPLOY_DIR/build && docker build --build-arg VERSION=$VER -t photosee:local -t photosee:$VER . && cd $DEPLOY_DIR && docker compose up -d --force-recreate"
 ```
 - 首次需要 `rustup target add x86_64-unknown-linux-musl`。镜像是 `FROM scratch`，13 上不用拉任何基础镜像。
 - 13 是非特权 LXC：解 tar 必须带 `--no-same-owner`，否则 chown 报错退出。
