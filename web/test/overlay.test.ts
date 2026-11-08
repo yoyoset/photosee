@@ -38,7 +38,6 @@ describe('IdleTimer', () => {
     timer.tick(1800);
     expect(timer.isShown).toBe(false);
   });
-
 });
 
 describe('IdleTimer holds', () => {
@@ -66,7 +65,6 @@ describe('IdleTimer holds', () => {
     timer.wake(5002);
     expect(changes).toEqual([false, true]);
   });
-
 });
 
 describe('reveal zone', () => {
@@ -105,6 +103,9 @@ function images(n: number): ImageItem[] {
   }));
 }
 
+// Overlays listen on `document`: unmount each, or it reacts to the next test.
+const mounted: Array<() => void> = [];
+
 function setup(platform: Session['platform'] = 'windows', n = 30) {
   const root = document.body.appendChild(document.createElement('div'));
   root.id = 'overlay';
@@ -118,6 +119,7 @@ function setup(platform: Session['platform'] = 'windows', n = 30) {
   const session = { platform } as Session;
   const ctx: Ctx = { store, api: {} as Api, src, esc: new EscStack(), session, dispatch };
   const unmount = mountOverlay(root, ctx);
+  mounted.push(unmount);
   return { root, live, store, dispatch, unmount };
 }
 
@@ -127,6 +129,7 @@ const pointer = (type: string, clientY: number): void => {
 
 beforeEach(() => setLang('en'));
 afterEach(() => {
+  for (const un of mounted.splice(0)) un();
   vi.useRealTimers();
   document.body.replaceChildren();
   document.documentElement.classList.remove('cursor-hidden');
@@ -188,7 +191,6 @@ describe('mountOverlay: title and live region', () => {
     expect(text()).toBe('photo3.jpg · 4 / 30 · trip');
     expect(live.textContent).toBe('4 of 30, photo3.jpg');
   });
-
 });
 
 describe('mountOverlay: auto-hide', () => {
@@ -216,7 +218,6 @@ describe('mountOverlay: auto-hide', () => {
     vi.advanceTimersByTime(OVERLAY_HIDE_MS);
     expect(store.get().overlayVisible).toBe(false);
   });
-
 });
 
 describe('mountOverlay: holds', () => {
@@ -265,7 +266,6 @@ describe('mountOverlay: holds', () => {
     pointer('pointermove', 10);
     expect(store.get().overlayVisible).toBe(true);
   });
-
 });
 
 describe('mountOverlay: cursor and lifecycle', () => {

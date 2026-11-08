@@ -31,8 +31,15 @@ way. All numbers live in `web/src/constants.ts`; this file explains them.
 ## Overlay
 - Fades after `OVERLAY_HIDE_MS` (2.8s) of no input. It never hides while
   hovered or while it holds keyboard focus.
-- It reappears on any pointer move, or when the pointer enters the bottom
-  `OVERLAY_REVEAL_ZONE_PX`.
+- In a window it reappears on any mouse move, or when the pointer enters the
+  bottom `OVERLAY_REVEAL_ZONE_PX`.
+- **Fullscreen is for looking** (user, 2026-11-08: the filmstrip and buttons
+  sat on top of the picture on a pad). Keys, the wheel, a finger on the
+  picture and a mouse move outside the bottom reveal zone do not bring the
+  bars back. A click/tap in the middle toggles them, a mouse in the bottom
+  reveal zone shows them, and a page turn by click/tap puts them away.
+  A finger on the picture never wakes them in a window either; touching the
+  bars themselves keeps them up.
 - Top-left shows `file name · 23 / 412 · folder`.
 - Bottom has the filmstrip (`FILMSTRIP_THUMB_PX` = 64, current item centered,
   virtualized, static thumbnails) and a row of buttons:
@@ -83,8 +90,10 @@ Notes:
 - Double-click toggles fit ↔ 100%. An image fitted above 100% (a small one
   enlarged) doubles instead. Drag pans when zoomed or when the fitted image
   is bigger than the view.
-- Clicking the outer `EDGE_CLICK_FRACTION` (15%) of either side turns the
-  page, but only in fit mode. Edge zones ignore double-click.
+- Clicking the left or right `TAP_TURN_FRACTION` (30%) turns the page, but
+  only in fit mode, exactly as a finger does (before 2026-11-08 the mouse had
+  15% edges). Edge zones ignore double-click. The middle 40% double-clicks to
+  zoom; in fullscreen a single click there toggles the bars.
 - Leaving 100% or custom zoom happens only by explicit action. Turning the
   page always resets to fit and resets display rotation (R) to 0: rotation
   is a look at this one image, not a mode.
@@ -99,7 +108,8 @@ Notes:
 - Pull down to close: past `PULL_CLOSE_PX` (100) or faster than
   `PULL_CLOSE_PX_PER_MS` (0.11). The background fades with the drag. Only
   when the image fits the view; otherwise a drag pans.
-- A tap in the middle toggles the overlay, after `DOUBLE_TAP_MS` (300) to
+- A tap in the middle toggles the overlay (finger, pen; the mouse only in
+  fullscreen), after `DOUBLE_TAP_MS` (300) to
   rule out a double tap. Double tap zooms. Pinch zooms around the midpoint.
 - Browser: a tap on a file or folder opens it (a mouse click only selects).
   A second tap within `DOUBLE_TAP_MS` is ignored. Long-press opens the item

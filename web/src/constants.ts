@@ -34,8 +34,6 @@ export const DOUBLE_TAP_MS = 300;
 /** A finger held this long without moving opens the item menu. iOS Safari
  * sends no contextmenu for a long-press; Android does (touch-tap.ts). */
 export const LONG_PRESS_MS = 500;
-/** Mouse edge-click page turn zone, fraction of width on each side. */
-export const EDGE_CLICK_FRACTION = 0.15;
 
 /** Holding an arrow key: show thumbnails only until keys are quiet this long. */
 export const KEY_REPEAT_SETTLE_MS = 150;

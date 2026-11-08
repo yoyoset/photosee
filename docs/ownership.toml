@@ -70,8 +70,8 @@ paths = ["web/src/viewer.ts", "web/src/zoom.ts", "web/src/prefetch.ts", "web/tes
 
 [J]
 paths = [
-  "web/src/overlay.ts", "web/src/filmstrip.ts", "web/src/info.ts", "web/src/overlay.css",
-  "web/test/overlay.test.ts", "web/test/filmstrip.test.ts", "web/test/info.test.ts",
+  "web/src/overlay.ts", "web/src/overlay-autohide.ts", "web/src/filmstrip.ts", "web/src/info.ts", "web/src/overlay.css",
+  "web/test/overlay.test.ts", "web/test/overlay-fullscreen.test.ts", "web/test/filmstrip.test.ts", "web/test/info.test.ts",
 ]
 
 [K]

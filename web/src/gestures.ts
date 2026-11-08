@@ -3,7 +3,8 @@
 // `zoom_by.anchor` is CSS px from the top-left of the bound element; `pan_by`
 // is how far the *image* moves (finger right: dx > 0; wheel down: dy < 0).
 //
-// Pages turn by tapping the left or right part of the screen, never by a
+// Pages turn by tapping the left or right 30% of the screen (finger, pen and
+// mouse alike); the middle toggles the bars. Never by a
 // sideways swipe: on phones that swipe is also the system's edge-swipe Back,
 // and the user kept turning pages by accident (2026-11-06).
 //
@@ -18,7 +19,7 @@
 import type { Action } from './actions';
 import type { Ctx } from './ctx';
 import {
-  DOUBLE_TAP_MS, EDGE_CLICK_FRACTION, PULL_CLOSE_PX, TAP_TURN_FRACTION, WHEEL_PAGE_DELTA, ZOOM_STEP,
+  DOUBLE_TAP_MS, PULL_CLOSE_PX, TAP_TURN_FRACTION, WHEEL_PAGE_DELTA, ZOOM_STEP,
 } from './constants';
 import {
   LINE_PX, TAP_SLOP_PX, TapTracker, WheelAccumulator, classifyRelease, pinchStep, type Pt, type Sample,
@@ -180,16 +181,19 @@ class Gestures {
   private onTap(mouse: boolean, p: Sample): void {
     const kind = this.taps.feed(p.x, p.y, p.t);
     const w = this.el.getBoundingClientRect().width;
-    // A finger gets wide zones (phones have no keys or wheel); a mouse keeps
-    // narrow edges so a click in the middle can still double-click to zoom.
-    const f = mouse ? EDGE_CLICK_FRACTION : TAP_TURN_FRACTION;
+    // Left / middle / right for finger, pen and mouse alike: a pad has no keys
+    // and no wheel, and "click the right side" is the same habit on a PC.
+    const f = TAP_TURN_FRACTION;
     const side = p.x < w * f ? -1 : p.x > w * (1 - f) ? 1 : 0;
     const edge = this.zoomed ? 0 : side;
+    const { store } = this.ctx;
     if (edge) {
       // Immediate: waiting DOUBLE_TAP_MS put 300 ms on every edge page turn,
       // and edge zones never zoom, so there is nothing to disambiguate.
       this.cancelPending();
       this.taps.reset();
+      // Fullscreen is for looking: a page turn puts the bars away.
+      if (store.get().fullscreen && store.get().overlayVisible) store.set({ overlayVisible: false });
       this.emit({ type: edge > 0 ? 'next' : 'prev' });
       return;
     }
@@ -198,8 +202,9 @@ class Gestures {
       this.emit({ type: 'zoom_toggle', anchor: { x: p.x, y: p.y } });
       return;
     }
-    if (!mouse) {
-      const { store } = this.ctx;
+    // A mouse in a window brings the bars back by moving; only fullscreen
+    // (where moving does not) needs the click.
+    if (!mouse || store.get().fullscreen) {
       this.defer(() => store.set({ overlayVisible: !store.get().overlayVisible }));
     }
   }

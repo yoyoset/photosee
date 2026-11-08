@@ -43,7 +43,7 @@ to make users give up on a viewer. Input modules only *emit* `Action`s
      - Mouse:
        - Double-click → `zoom_toggle` with an anchor.
        - Drag when zoomed → `pan_by`.
-       - A click in the outer `EDGE_CLICK_FRACTION` turns the page, but
+       - A click in the outer `TAP_TURN_FRACTION` (was `EDGE_CLICK_FRACTION`) turns the page, but
          only in fit mode, and must not fire for the first click of a
          double-click.
      - Touch, via Pointer Events and `touch-action: none` on the stage:

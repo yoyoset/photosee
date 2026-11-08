@@ -91,10 +91,37 @@ describe('mouse', () => {
     expect(seen.filter((a) => a.type === 'zoom_toggle')).toEqual([]);
   });
 
-  it('a single click in the middle does nothing', () => {
+  it('a single click in the middle of a window does nothing (moving brings the bars)', () => {
+    const before = store.get().overlayVisible;
     ptr('pointerdown', 500, 300, 0, { kind: 'mouse' }); ptr('pointerup', 500, 300, 30, { kind: 'mouse' });
     vi.advanceTimersByTime(2000);
     expect(seen).toEqual([]);
+    expect(store.get().overlayVisible).toBe(before);
+  });
+});
+
+describe('mouse: three zones', () => {
+  it('the outer 30% turns pages like a finger does: 250 turns, 350 does not', () => {
+    ptr('pointerdown', 250, 300, 0, { kind: 'mouse' }); ptr('pointerup', 250, 300, 30, { kind: 'mouse' });
+    expect(seen).toEqual([{ type: 'prev' }]);
+    ptr('pointerdown', 350, 300, 1000, { kind: 'mouse' }); ptr('pointerup', 350, 300, 1030, { kind: 'mouse' });
+    vi.advanceTimersByTime(2000);
+    expect(seen).toEqual([{ type: 'prev' }]);
+  });
+
+  it('fullscreen: a middle click toggles the bars; an edge click turns the page and puts them away', () => {
+    store.set({ fullscreen: true, overlayVisible: false });
+    ptr('pointerdown', 500, 300, 0, { kind: 'mouse' }); ptr('pointerup', 500, 300, 30, { kind: 'mouse' });
+    vi.advanceTimersByTime(DOUBLE_TAP_MS);
+    expect(store.get().overlayVisible).toBe(true);
+    ptr('pointerdown', 900, 300, 2000, { kind: 'mouse' }); ptr('pointerup', 900, 300, 2030, { kind: 'mouse' });
+    expect(seen).toEqual([{ type: 'next' }]);
+    expect(store.get().overlayVisible).toBe(false);
+  });
+
+  it('windowed: a page turn leaves the bars alone', () => {
+    ptr('pointerdown', 900, 300, 0, { kind: 'mouse' }); ptr('pointerup', 900, 300, 30, { kind: 'mouse' });
+    expect(store.get().overlayVisible).toBe(true);
   });
 
 });
